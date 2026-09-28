@@ -4,6 +4,7 @@ __pycache__/
 .pytest-tmp/
 .pytest-tmp-group/
 .pytest-tmp-avatar/
+.pytest-*/
 *.py[cod]
 # Local data and secrets
 *.db
@@ -16,6 +17,12 @@ __pycache__/
 .env.*
 !.env.example
 *.log
+node_modules/
+.wrangler/
+.wrangler-dry-run/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
 *.pem
 *.key
 *.pfx

@@ -11,10 +11,15 @@ Choose from eight locally stored photo and meme avatars before joining. Your ava
 
 Built with Python FastAPI, native WebSockets, async SQLAlchemy, SQLite, and plain HTML/CSS/JavaScript.
 
+There is also a separate Cloudflare Workers version for always-on hosting without
+keeping this PC or a tunnel running. It uses the same frontend, with a
+SQLite-backed Durable Object for chat history and re-encoded image uploads.
+
 Pasted YouTube, public Google Drive, Vimeo, Instagram, TikTok, Dailymotion,
-Streamable, and direct MP4/WebM/Ogg links play inside the chat. Private or removed
-media and providers that block embedding remain safe clickable links instead of
-being loaded as arbitrary iframes.
+Streamable, Pexels, xHamster, and direct MP4/WebM/Ogg links show a player after
+the viewer clicks Play in chat. The viewer's browser contacts the video provider;
+the chat server does not fetch the link. Unrecognized URLs remain clickable links.
+Private or removed media and providers that block embedding may not play.
 
 ## Run locally
 
@@ -67,6 +72,51 @@ windows open. Quick Tunnel URLs are temporary, have no uptime guarantee, and
 change whenever a new tunnel is created. The explicit HTTP/2 protocol avoids
 networks that block outbound QUIC traffic, while `127.0.0.1` avoids Windows
 resolving `localhost` to an IPv6 listener that Uvicorn may not be using.
+
+## Host on Cloudflare Free
+
+The Cloudflare version starts as a **new, empty public room**. It does not upload
+`chat.db`, `uploads/`, `.env`, or any other local chat data. The local FastAPI
+version continues to work separately. This setup needs a free Cloudflare
+account, but no PC or tunnel after deployment.
+
+1. [Create a Cloudflare account](https://dash.cloudflare.com/sign-up) and select
+   the Workers Free plan. Install Node.js if you do not already have it.
+2. In this project directory, run `npm ci`. For a local test, copy
+   `.dev.vars.example` to `.dev.vars`, replace its placeholder with a long random
+   string, then run `npm run dev:cloud`. In another terminal, run
+   `npm run smoke:cloud`. The local test URL is `http://127.0.0.1:8787`.
+3. Run `npx wrangler login`, then `npm run deploy:cloud`. Wrangler prints the
+   `https://chatter-cloud.<your-subdomain>.workers.dev` URL. The deployed app
+   will return a configuration error on joining/uploading until step 4.
+4. Run `npx wrangler secret put RATE_SALT` and enter a **different**, long,
+   randomly generated value at the prompt. Do not put this production value in
+   `.dev.vars`, `wrangler.jsonc`, GitHub, or a chat message. Reload the deployed
+   URL and verify it from two devices. Wrangler stores this secret in Cloudflare,
+   not this repository.
+
+To use your own domain later, claim/register it through the GitHub Student
+Developer Pack offer, add it to Cloudflare, complete the registrar nameserver
+setup, then add a **Custom Domain** to this Worker in Cloudflare. A free first
+year of domain registration may have a paid renewal; `workers.dev` does not
+require a purchased domain. Do not change the domain until the `workers.dev`
+version is working.
+
+Free-tier limits apply. This implementation caps one room at 200 concurrent
+connections, 30 messages/minute and 20 uploads/day per visitor, 5 MB per image,
+and 500 MB of stored chat images. Cloudflare's own request, storage, and image
+transformation limits can stop the app sooner under heavy traffic. There is no
+automatic migration, backup, or guarantee of unlimited free hosting. Images are
+converted to WebP before storage; the original image and its metadata are not
+kept by this app. Cloudflare receives visitors' IPs and the data they post.
+
+**Public-room warning:** Anyone with the URL can read messages and images and
+post under any display name. This project currently has no real accounts, age
+verification, reporting, moderation, or administrator delete controls. Do not
+invite the public to an 18+ room until you decide and implement appropriate
+safeguards and review applicable platform policies and local requirements.
+Hosting on Cloudflare also does not make third-party videos embeddable when their
+provider blocks playback.
 
 ## Data and configuration
 

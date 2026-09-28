@@ -1,0 +1,15 @@
+{
+  "name": "chatter-cloud",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:cloud": "wrangler dev",
+    "deploy:cloud": "wrangler deploy",
+    "check:cloud": "node --check cloudflare/worker.js",
+    "smoke:cloud": "node cloudflare/smoke.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "ws": "^8.22.0"
+  }
+}

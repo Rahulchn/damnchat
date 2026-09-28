@@ -200,3 +200,8 @@ def test_image_upload_rejects_unsafe_and_oversized_files(database_url, tmp_path)
         assert client.post("/api/uploads", content=fake_png, headers={"Content-Type": "image/png"}).status_code == 415
         oversized = b"\x89PNG\r\n\x1a\n" + b"x" * (5 * 1024 * 1024)
         assert client.post("/api/uploads", content=oversized, headers={"Content-Type": "image/png"}).status_code == 413
+
+
+def test_user_links_are_not_fetched_by_the_server(database_url):
+    with TestClient(create_app(database_url)) as client:
+        assert client.get("/api/video-preview", params={"url": "https://example.com/video"}).status_code == 404

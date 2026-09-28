@@ -367,8 +367,12 @@ html[data-theme="light"] .composer .attachment-button:hover:not(:disabled){backg
 .video-card.is-vertical .video-player-wrap{aspect-ratio:9/16;max-height:68vh}
 .video-player-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#030409;overflow:hidden}
 .video-player-wrap iframe,.video-player-wrap video{display:block;width:100%;height:100%;border:0;background:#030409}
+.video-activate{display:grid;place-items:center;width:100%;height:100%;border:0;background:#0d1020;color:#eee8ff;font:750 13px/1.4 "Segoe UI",sans-serif;cursor:pointer}
+.video-activate:hover{background:#1e1736;color:#78fff1}
 .video-source-link{display:block;padding:8px 10px;color:#aaa0bb;background:#0e111b;font-size:9px;font-weight:750;letter-spacing:.25px;text-decoration:none}
 .video-source-link:hover{color:#78fff1;background:#131827}
+.video-provider-note{margin:0;padding:9px 10px;color:#aaa0bb;background:#0e111b;font-size:10px;line-height:1.45}
+.video-retry{width:100%;border:0;text-align:left;cursor:pointer;font-family:inherit}
 .link-bubble{min-width:min(320px,65vw)}
 .link-fallback{display:flex;flex-direction:column;gap:4px;margin-top:3px;padding:10px 11px;border:1px solid #403750;border-radius:10px;background:#0e111b;color:#f0ebf8;text-decoration:none;white-space:normal}
 .link-fallback strong{font-size:11px;overflow-wrap:anywhere}.link-fallback span{color:#948aa5;font-size:9px;font-weight:700}
@@ -378,6 +382,7 @@ html[data-theme="light"] .message-link:hover{color:#b32978}
 html[data-theme="light"] .video-card{border-color:#251838;background:#eee8f7}
 html[data-theme="light"] .video-source-link{background:#f4effb;color:#66527f}
 html[data-theme="light"] .video-source-link:hover{background:#fff0a8;color:#251838}
+html[data-theme="light"] .video-provider-note{background:#f4effb;color:#66527f}
 html[data-theme="light"] .link-fallback{background:#f4effb;border-color:#cdbfe0;color:#251838}
 html[data-theme="light"] .link-fallback span{color:#776789}
 html[data-theme="light"] .link-fallback:hover{background:#fff0a8;border-color:#251838}

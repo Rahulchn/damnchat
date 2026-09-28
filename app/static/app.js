@@ -98,13 +98,15 @@ function resizeComposer() {
 el("message-input").addEventListener("input",resizeComposer);
 const state = { name: "", socket: null, joined: false, ready: false, timer: null,
   retry: 0, messages: new Map(), hasMore: false, pending: null, pendingTimer: null,
-  historyVersion: 0, image: null, uploading: false };
+  historyVersion: 0, image: null, uploading: false, uploadController: null,
+  joinTimer: null, session: 0 };
 
 function updateSendState() {
   const hasContent=!!el("message-input").value.trim() || !!state.image;
   const blocked=!state.ready || !!state.pending || state.uploading;
   el("send-button").disabled=blocked || !hasContent;
   el("image-button").disabled=blocked;
+  el("remove-image").disabled=state.uploading;
 }
 
 function ready(value, label) {
@@ -219,6 +221,29 @@ function videoDetails(value) {
     }
   }
 
+  if (host === "pexels.com") {
+    const match = url.pathname.match(/^\/video\/(?:[^/]*-)?(\d+)\/?$/);
+    if (match) {
+      return {
+        kind: "direct", provider: "Pexels", title: "Pexels video",
+        source: url.origin + url.pathname,
+        player: `https://www.pexels.com/download/video/${match[1]}/`,
+      };
+    }
+  }
+
+  if (["xhamster.com", "xhamster46.desi"].includes(host)) {
+    const match = url.pathname.match(/^\/videos\/[^/]*-([A-Za-z0-9]{6,20})\/?$/);
+    if (match) {
+      return {
+        kind: "embed", provider: "xHamster", title: "Shared video",
+        source: url.origin + url.pathname,
+        player: `${url.origin}/embed/${match[1]}`,
+        alternatePlayer: host === "xhamster.com" ? null : `https://xhamster.com/embed/${match[1]}`,
+      };
+    }
+  }
+
   if (/\.(mp4|webm|ogg|ogv)$/i.test(url.pathname)) {
     return {kind: "direct", provider: "Video", title: "Shared video", source: url.href, player: url.href};
   }
@@ -256,31 +281,62 @@ function videoNode(details) {
   const card = document.createElement("div"); card.className = "video-card";
   if (details.vertical) card.classList.add("is-vertical");
   const frame = document.createElement("div"); frame.className = "video-player-wrap";
+  let player;
   if (details.kind === "embed") {
-    const player = document.createElement("iframe");
-    player.src = details.player; player.title = details.title; player.loading = "lazy";
-    player.allow = "fullscreen; picture-in-picture; encrypted-media";
+    player = document.createElement("iframe");
+    player.title = details.title; player.loading = "lazy";
+    player.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
     player.referrerPolicy = "strict-origin-when-cross-origin"; player.allowFullscreen = true;
-    frame.append(player);
+    if (details.provider === "xHamster") {
+      // Let the provider request cookie access for its own age/session flow,
+      // while still preventing top-level redirects and pop-up windows.
+      player.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation allow-storage-access-by-user-activation");
+    }
   } else {
-    const player = document.createElement("video");
-    player.src = details.player; player.controls = true; player.preload = "metadata";
+    player = document.createElement("video");
+    player.controls = true; player.preload = "metadata";
     player.playsInline = true; player.setAttribute("controlslist", "nodownload");
-    frame.append(player);
+  }
+  const activate=document.createElement("button");
+  activate.type="button"; activate.className="video-activate";
+  activate.textContent=`▶ Play ${details.provider} in chat`;
+  activate.addEventListener("click",() => {
+    player.src=details.player;
+    frame.replaceChildren(player);
+  },{once:true});
+  frame.append(activate);
+  if (details.alternatePlayer) {
+    const retry = document.createElement("button");
+    retry.type = "button"; retry.className = "video-source-link video-retry";
+    retry.textContent = "Not playing? Try the other in-chat player";
+    retry.addEventListener("click", () => {
+      player.src = details.alternatePlayer;
+      frame.replaceChildren(player);
+    });
+    card.append(retry);
   }
   const source = document.createElement("a");
   source.className = "video-source-link"; source.href = details.source;
   source.target = "_blank"; source.rel = "noopener noreferrer nofollow";
   source.textContent = `${details.provider} · Open original`;
-  card.append(frame, source); return card;
+  card.append(frame);
+  if (details.provider === "xHamster") {
+    const note = document.createElement("p");
+    note.className = "video-provider-note";
+    note.textContent = "If playback stays on the thumbnail, the provider may require age confirmation or block embedded playback. CHAT cannot override that check.";
+    card.append(note);
+  }
+  if (details.provider !== "xHamster") card.append(source);
+  return card;
 }
 
 function linkFallbackNode(url) {
   const link = document.createElement("a"); link.className = "link-fallback";
   link.href = url.href; link.target = "_blank"; link.rel = "noopener noreferrer nofollow";
   const host = document.createElement("strong"); host.textContent = url.hostname.replace(/^www\./, "");
-  const note = document.createElement("span"); note.textContent = "Preview unavailable · Open link ↗";
-  link.append(host, note); return link;
+  const note = document.createElement("span"); note.textContent = "Open link ↗";
+  link.append(host, note);
+  return link;
 }
 
 function messageNode(message) {
@@ -342,8 +398,8 @@ el("message-scroll").addEventListener("scroll", () => {
   const scroll=el("message-scroll");
   if (scroll.scrollHeight-scroll.scrollTop-scroll.clientHeight<70) el("new-messages").classList.add("hidden");
 });
-function connect() {
-  if (!state.joined) return;
+function connect(session=state.session) {
+  if (!state.joined || session!==state.session) return;
   clearTimeout(state.timer);
   ready(false, state.retry ? "Reconnecting…" : "Connecting…");
   const socket = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
@@ -398,7 +454,7 @@ function connect() {
     }
     if (event.code === 1008) { leave(); el("join-error").textContent = "Please enter a valid name and join again."; return; }
     ready(false,"Reconnecting…");
-    state.timer = setTimeout(connect, Math.min(1000 * 2 ** state.retry++,10000));
+    state.timer = setTimeout(() => connect(session), Math.min(1000 * 2 ** state.retry++,10000));
     if (!el("join-view").classList.contains("hidden")) {
       el("join-error").textContent = "Cannot connect yet. Retrying…";
       el("join-button").disabled = false;
@@ -406,8 +462,11 @@ function connect() {
   });
 }
 function leave() {
-  state.joined = false; state.historyVersion++;
-  clearTimeout(state.timer); clearPending();
+  state.joined = false; state.historyVersion++; state.session++;
+  clearTimeout(state.timer); clearTimeout(state.joinTimer);
+  state.joinTimer=null;
+  state.uploadController?.abort(); state.uploadController=null;
+  clearPending();
   const socket = state.socket; state.socket = null; socket?.close();
   ready(false,"Disconnected");
   el("join-button").disabled = false;
@@ -424,16 +483,18 @@ el("join-form").addEventListener("submit", event => {
   const name = el("display-name").value.trim().replace(/\s+/g," ");
   if (!name || name.length>40) { el("join-error").textContent = "Enter a name between 1 and 40 characters."; return; }
   if (state.socket) { const old=state.socket; state.socket=null; old.close(); }
-  state.name=name; state.joined=true; state.retry=0;
+  clearTimeout(state.joinTimer);
+  state.name=name; state.joined=true; state.retry=0; state.session++;
+  const session=state.session;
   el("join-error").textContent=""; roomError("");
   el("join-button").disabled=true;
   clearTimeout(fireResetTimer);
   const reducedMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
   setFireScene(reducedMotion ? "lit" : "ignite");
-  if (reducedMotion) connect();
+  if (reducedMotion) connect(session);
   else {
     fireResetTimer=setTimeout(() => setFireScene("lit"),650);
-    setTimeout(connect,1200);
+    state.joinTimer=setTimeout(() => { state.joinTimer=null; connect(session); },1200);
   }
 });
 el("leave-button").addEventListener("click",leave);
@@ -474,13 +535,18 @@ el("message-form").addEventListener("submit",async event => {
   const input=el("message-input"), body=input.value.trim();
   if ((!body && !state.image) || !state.ready || state.pending || state.uploading ||
       state.socket?.readyState!==WebSocket.OPEN) return;
+  const session=state.session;
+  const selectedImage=state.image;
   state.uploading=true; updateSendState(); roomError("");
-  let imageUrl=state.image?.uploadedUrl || null;
+  let imageUrl=selectedImage?.uploadedUrl || null;
   try {
-    if (state.image && !imageUrl) {
+    if (selectedImage && !imageUrl) {
       el("send-label").textContent="Uploading…";
+      const controller=new AbortController();
+      state.uploadController=controller;
       const response=await fetch("/api/uploads",{
-        method:"POST", headers:{"Content-Type":state.image.file.type}, body:state.image.file,
+        method:"POST", headers:{"Content-Type":selectedImage.file.type},
+        body:selectedImage.file, signal:controller.signal,
       });
       if (!response.ok) {
         let detail="Image upload failed.";
@@ -488,14 +554,27 @@ el("message-form").addEventListener("submit",async event => {
         throw new Error(detail);
       }
       imageUrl=(await response.json()).image_url;
-      state.image.uploadedUrl=imageUrl;
+      if (session!==state.session || selectedImage!==state.image) return;
+      selectedImage.uploadedUrl=imageUrl;
     }
+    if (session!==state.session) return;
+    if (!state.ready || state.socket?.readyState!==WebSocket.OPEN) {
+      state.uploadController=null;
+      clearPending();
+      roomError("Connection lost before sending. Your draft is kept; try again when CHAT reconnects.");
+      return;
+    }
+    state.uploadController=null;
     state.uploading=false;
     state.pending={body,draft:input.value,imageUrl};
     el("send-label").textContent="Sending…"; updateSendState();
     state.socket.send(JSON.stringify({type:"message",body,image_url:imageUrl}));
   }
-  catch (error) { clearPending(); roomError(error.message || "Message could not be sent. Your draft is kept."); return; }
+  catch (error) {
+    if (session!==state.session) return;
+    state.uploadController=null;
+    clearPending(); roomError(error.message || "Message could not be sent. Your draft is kept."); return;
+  }
   state.pendingTimer=setTimeout(() => {
     if (!state.pending) return;
     clearPending(); roomError("No confirmation received. Your draft is kept; check the history before retrying.");

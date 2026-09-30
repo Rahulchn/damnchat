@@ -210,7 +210,7 @@ def create_app(database_url: str | None = None, upload_dir: Path | None = None) 
         finally:
             await database.engine.dispose()
 
-    application = FastAPI(title="Chatter · Group Chat", lifespan=lifespan)
+    application = FastAPI(title="damnchat · Chat & Watch Together", lifespan=lifespan)
     application.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     @application.middleware("http")

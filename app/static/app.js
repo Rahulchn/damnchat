@@ -251,7 +251,7 @@ function mediaNode(details) {
   if (details.provider === "xHamster") {
     const note = document.createElement("p");
     note.className = "video-provider-note";
-    note.textContent = "If playback stays on the thumbnail, the provider may require age confirmation or block embedded playback. CHAT cannot override that check.";
+    note.textContent = "If playback stays on the thumbnail, the provider may require age confirmation or block embedded playback. damnchat cannot override that check.";
     card.append(note);
   }
   if (details.provider !== "xHamster") card.append(source);
@@ -607,7 +607,7 @@ el("message-form").addEventListener("submit",async event => {
     if (!state.ready || state.socket?.readyState!==WebSocket.OPEN) {
       state.uploadController=null;
       clearPending();
-      roomError("Connection lost before sending. Your draft is kept; try again when CHAT reconnects.");
+      roomError("Connection lost before sending. Your draft is kept; try again when damnchat reconnects.");
       return;
     }
     state.uploadController=null;

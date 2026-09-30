@@ -1,5 +1,7 @@
 # damnchat — a place to hang out
 
+[Live app](https://damnchat.me) · [GitHub repository](https://github.com/Rahulchn/damnchat)
+
 Enter a nickname and join the public lounge, or create an invite room for friends. No account is required. Messages support replies and emoji reactions, with saved history per room.
 
 Invite rooms use an unguessable link, not accounts: anyone holding the link can read its history and images. They are not end-to-end encrypted. Keep invite links private.
@@ -43,8 +45,14 @@ parties.
 
 ## Run locally
 
+Clone `https://github.com/Rahulchn/damnchat.git`, or use your existing checkout.
+The paths below assume a fresh clone named `damnchat`; an existing `Chat` folder
+does not need to be renamed. The deployed Cloudflare Worker keeps its internal
+`chatter-cloud` name to preserve its endpoint and existing data. Legacy browser
+storage keys and environment variable names also stay compatible.
+
 ```powershell
-cd C:\path\to\CHAT
+cd C:\path\to\damnchat
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8765
@@ -56,32 +64,32 @@ For friends on the same Wi-Fi, run with `--host 0.0.0.0` instead, then share `ht
 
 ## Share temporarily over the internet
 
-The project includes a one-command launcher that starts CHAT, creates a temporary
+The project includes a one-command launcher that starts damnchat, creates a temporary
 Cloudflare Quick Tunnel, and prints the public URL:
 
 ```powershell
-cd C:\path\to\CHAT
+cd C:\path\to\damnchat
 powershell -ExecutionPolicy Bypass -File .\scripts\start-public.ps1
 ```
 
-Keep that PowerShell window open and press `Ctrl+C` to stop the tunnel. If CHAT
+Keep that PowerShell window open and press `Ctrl+C` to stop the tunnel. If damnchat
 was not already running, the launcher stops its hidden Uvicorn process too.
 
 For the manual method, start the application server in one PowerShell window:
 
 ```powershell
-cd C:\path\to\CHAT
+cd C:\path\to\damnchat
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8765
 ```
 
 In a second PowerShell window, start the tunnel:
 
 ```powershell
-cd C:\path\to\CHAT
+cd C:\path\to\damnchat
 powershell -ExecutionPolicy Bypass -File .\scripts\start-tunnel.ps1
 ```
 
-The script checks that CHAT is reachable locally, then runs:
+The script checks that damnchat is reachable locally, then runs:
 
 ```powershell
 cloudflared tunnel --protocol http2 --url http://127.0.0.1:8765

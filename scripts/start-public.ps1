@@ -31,7 +31,7 @@ function Test-ChatServer {
 
 try {
     if (-not (Test-ChatServer)) {
-        Write-Host "Starting CHAT locally..." -ForegroundColor Cyan
+        Write-Host "Starting damnchat locally..." -ForegroundColor Cyan
         $serverProcess = Start-Process `
             -FilePath $python `
             -ArgumentList @("-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8765") `
@@ -43,17 +43,17 @@ try {
         $serverDeadline = (Get-Date).AddSeconds(20)
         while (-not (Test-ChatServer) -and (Get-Date) -lt $serverDeadline) {
             if ($serverProcess.HasExited) {
-                throw "Uvicorn stopped before CHAT became reachable."
+                throw "Uvicorn stopped before damnchat became reachable."
             }
             Start-Sleep -Milliseconds 300
         }
 
         if (-not (Test-ChatServer)) {
-            throw "CHAT did not become reachable at $localUrl within 20 seconds."
+            throw "damnchat did not become reachable at $localUrl within 20 seconds."
         }
     }
     else {
-        Write-Host "CHAT is already running locally." -ForegroundColor Green
+        Write-Host "damnchat is already running locally." -ForegroundColor Green
     }
 
     New-Item -ItemType Directory -Path $logDirectory | Out-Null
@@ -91,7 +91,7 @@ try {
     }
 
     Write-Host ""
-    Write-Host "CHAT is public:" -ForegroundColor Green
+    Write-Host "damnchat is public:" -ForegroundColor Green
     Write-Host $publicUrl -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Keep this window open. Press Ctrl+C to stop the tunnel." -ForegroundColor Cyan

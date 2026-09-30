@@ -1,11 +1,11 @@
-# Run CHAT locally and through a Cloudflare quick tunnel
+# Run damnchat locally and through a Cloudflare quick tunnel
 
 ## One command
 
-This starts CHAT, creates the tunnel, and prints the public link:
+This starts damnchat, creates the tunnel, and prints the public link:
 
 ```powershell
-cd C:\path\to\CHAT
+cd C:\path\to\damnchat
 powershell -ExecutionPolicy Bypass -File .\scripts\start-public.ps1
 ```
 
@@ -18,7 +18,7 @@ Open two PowerShell windows and keep both running.
 ## Window 1 — application server
 
 ```powershell
-cd C:\path\to\CHAT
+cd C:\path\to\damnchat
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8765
 ```
 
@@ -27,7 +27,7 @@ cd C:\path\to\CHAT
 Either use the helper:
 
 ```powershell
-cd C:\path\to\CHAT
+cd C:\path\to\damnchat
 powershell -ExecutionPolicy Bypass -File .\scripts\start-tunnel.ps1
 ```
 

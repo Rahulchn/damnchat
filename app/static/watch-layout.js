@@ -58,7 +58,7 @@ globalThis.watchLayout = {
     this.conversation.style.setProperty("--watch-share",share + "%");
     const room = this.el("room-view");
     if (room.classList.contains("is-theater") !== this.theater) room.classList.toggle("is-theater",this.theater);
-    this.el("message-input").placeholder = room.classList.contains("is-watching") ? "Send a message…" : "Type a message or paste a video link…";
+    this.el("message-input").placeholder = room.classList.contains("is-watching") ? "Send a message…" : "Type a message or share a link…";
     this.resizeComposer?.();
     const button = this.el("watch-theater");
     button.setAttribute("aria-pressed",String(this.theater));

@@ -4,10 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#080b14">
-  <title>Chatter — Big chat energy</title>
-  <link rel="icon" href="/static/avatars/orbit.svg" type="image/svg+xml">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>damnchat — stay a little, say a lot</title>
+  <link rel="icon" href="/static/chat-logo.svg?v=1" type="image/svg+xml">
   <script>try{document.documentElement.dataset.theme=localStorage.getItem("chatter_theme")==="light"?"light":"dark"}catch{document.documentElement.dataset.theme="dark"}</script>
-  <link rel="stylesheet" href="/static/styles.css?v=17">
+  <link rel="stylesheet" href="/static/styles.css?v=19">
+  <link rel="stylesheet" href="/static/hangout.css?v=2">
+  <link rel="stylesheet" href="/static/return-ui.css?v=1">
+  <link rel="stylesheet" href="/static/watch-layout.css?v=1">
 </head>
 <body>
   <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -23,73 +27,91 @@
   </defs></svg>
   <main class="shell">
     <section id="join-view" class="join-layout">
+      <header class="landing-nav">
+        <a class="brand" href="/" aria-label="Damnchat home"><span class="brand-mark"><img src="/static/chat-logo.svg?v=1" alt=""></span>damnchat<span class="brand-dot">.</span></a>
+        <button id="saved-open" class="saved-open" type="button">☆ Your rooms</button>
+        <button class="theme-toggle" type="button" aria-label="Switch to light mode"><span class="theme-glyph" aria-hidden="true">☀</span><span class="theme-label">Light mode</span></button>
+      </header>
       <div class="welcome-panel">
-        <a class="brand" href="/" aria-label="Chatter home"><span class="brand-mark"><svg class="icon"><use href="#icon-chat"/></svg></span>chatter<span class="brand-dot">.</span></a>
-        <div class="welcome-copy"><span class="eyebrow"><span class="tiny-dot"></span> THE GROUP CHAT IS OPEN</span>
-          <h1>Big chat<br><span>energy.</span></h1>
-          <p>Come for the conversation.<br class="desktop-break"> Stay for the questionable memes.</p>
+        <div class="welcome-copy"><span class="eyebrow"><span class="tiny-dot"></span> YOUR CORNER OF THE INTERNET</span>
+          <h1>Stay a little.<br><span>Say a lot.</span><i aria-hidden="true">✳</i></h1>
+          <p>Find a conversation. Bring your friends.<br>Put something on and lose track of time.</p>
         </div>
-        <div class="welcome-art" aria-hidden="true">
-          <div class="orbit-ring ring-one"></div><div class="orbit-ring ring-two"></div>
-          <div class="floating-avatar art-avatar-one"><img src="/static/avatars/gigachad.webp" alt=""></div>
-          <div class="floating-avatar art-avatar-two"><img src="/static/avatars/patrick.png" alt=""></div>
-          <div class="floating-avatar art-avatar-three"><img src="/static/avatars/doge.png" alt=""></div>
-          <div class="sample-bubble bubble-one">you made it! <span>✦</span></div>
-          <div class="sample-bubble bubble-two">say less 😎</div>
-          <div class="art-star">✳</div><div class="art-dot"></div>
+        <div class="lounge-art" aria-hidden="true">
+          <div class="lounge-orbit orbit-a"></div><div class="lounge-orbit orbit-b"></div>
+          <div class="lounge-core"><svg viewBox="0 0 100 100"><path d="M27 22h46a13 13 0 0 1 13 13v26a13 13 0 0 1-13 13H47L27 87V74a13 13 0 0 1-13-13V35a13 13 0 0 1 13-13Z" fill="currentColor"/><circle cx="34" cy="48" r="5"/><circle cx="50" cy="48" r="5"/><circle cx="66" cy="48" r="5"/></svg></div>
+          <div class="lounge-note note-one"><span>▶</span><div>one more video?<small>watch it together.</small></div></div>
+          <div class="lounge-note note-two">same room. different chaos.<span>✦</span></div>
+          <span class="lounge-spark spark-one">✧</span><span class="lounge-spark spark-two">+</span>
         </div>
-        <div class="welcome-footer"><span class="mini-avatars"><img src="/static/avatars/roll-safe.jpg" alt=""><img src="/static/avatars/sad-frog.png" alt=""><img src="/static/avatars/jonah-hill.jpg" alt=""></span><span>One room. Unlimited main character moments.</span></div>
+        <div class="feature-ribbon"><span>01 <strong>Meet people</strong></span><span>02 <strong>Watch together</strong></span><span>03 <strong>Your own room</strong></span></div>
+        <section id="return-rooms" class="return-rooms hidden" aria-label="Saved rooms"><span class="eyebrow">PICK UP WHERE YOU LEFT OFF</span><div id="return-rooms-list"></div><small>Saved on this device. Only you see these names.</small></section>
       </div>
       <div class="join-panel">
-        <button class="theme-toggle" type="button" aria-label="Switch to light mode"><span class="theme-glyph" aria-hidden="true">☀</span><span class="theme-label">Light mode</span></button>
-        <div class="join-heading"><span class="eyebrow">YOUR NEXT TAB IS THE FUN ONE</span><h2>Pick your vibe.<br>Jump in.</h2><p>Choose an avatar, add your name, and you're in.</p></div>
+        <div class="join-heading"><span class="eyebrow">PULL UP A CHAIR</span><h2>Make yourself <br>at home.</h2><p>No account. Just a name and a little curiosity.</p></div>
         <form id="join-form">
+          <div id="room-picker" class="room-picker" role="group" aria-label="Choose a room"><button id="public-room" type="button" aria-pressed="true">The public lounge<small>Meet whoever's here</small></button><button id="private-room" type="button" aria-pressed="false">Your own room<small>Invite your people</small></button></div>
+          <p id="invite-notice" class="invite-notice hidden">You're invited. This room is for people with the link.</p>
           <div class="profile-preview"><span id="preview-avatar" class="avatar avatar-xl"></span><div><span class="preview-label">YOUR CHAT PERSONA</span><strong id="preview-name">The mystery guest</strong></div><svg class="icon"><use href="#icon-spark"/></svg></div>
           <fieldset class="avatar-fieldset"><legend>Choose your avatar <span id="avatar-name">Gigachad</span></legend><div id="avatar-picker" class="avatar-picker"></div></fieldset>
-          <label for="display-name" class="field-label">What should we call you?</label>
+          <div class="name-label"><label for="display-name" class="field-label">What should we call you?</label><button id="shuffle-name" type="button">↻ Surprise me</button></div>
           <input id="display-name" placeholder="Your name" maxlength="40" required autocomplete="nickname">
           <button id="join-button" class="primary-button" type="submit">
             <span id="fire-loader" class="fire-loader" data-fire-state="idle" aria-hidden="true"><i class="fire-log log-left"></i><i class="fire-log log-right"></i><i class="fire-stone stone-left"></i><i class="fire-stone stone-right"></i><i class="fire-spark"></i><i class="mini-flame flame-back"></i><i class="mini-flame flame-front"></i></span>
-            <span>Enter the chat</span><svg class="icon"><use href="#icon-arrow"/></svg>
+            <span id="join-label">Enter the lounge</span><svg class="icon"><use href="#icon-arrow"/></svg>
           </button>
         </form>
         <p id="join-error" class="error" role="alert"></p>
-        <div class="join-footnote"><svg class="icon"><use href="#icon-smile"/></svg>No account. Just a name and good vibes.</div>
+        <div class="join-footnote"><svg class="icon"><use href="#icon-smile"/></svg>Come as you are. Stay as long as you like.</div>
       </div>
     </section>
 
     <section id="room-view" class="room hidden" aria-label="Group chat">
       <aside class="sidebar">
-        <div class="brand"><span class="brand-mark"><svg class="icon"><use href="#icon-chat"/></svg></span>chatter<span class="brand-dot">.</span></div>
-        <div class="sidebar-section"><span class="eyebrow">THE HANGOUT</span><div class="room-nav" aria-current="page"><span class="hash">#</span><div><strong>The group chat</strong><span>Everyone's here</span></div><span class="tiny-dot"></span></div></div>
+        <div class="brand"><span class="brand-mark"><img src="/static/chat-logo.svg?v=1" alt=""></span>damnchat<span class="brand-dot">.</span></div>
+        <div class="sidebar-section"><span class="eyebrow">THE HANGOUT</span><div class="room-nav" aria-current="page"><span class="hash">#</span><div><strong id="sidebar-room">The public lounge</strong><span id="sidebar-room-detail">Everyone's here</span></div><span class="tiny-dot"></span></div></div>
         <div class="room-note"><span class="note-spark">✳</span><h3>No awkward<br>intros needed.</h3><p>Drop a thought, a joke,<br>or a very important “hey”.</p><span class="note-line"></span></div>
         <div class="sidebar-bottom"><span class="sidebar-caption">GOOD VIBES HAVE ENTERED THE CHAT</span><div class="self-profile"><span id="sidebar-avatar" class="avatar"></span><div><strong id="sidebar-name"></strong><span>That's you</span></div><span class="tiny-dot"></span></div></div>
       </aside>
       <section class="conversation">
         <header class="room-header">
           <span class="room-hash" aria-hidden="true">#</span>
-          <div class="room-title"><h1>The group chat <span aria-hidden="true">✳</span></h1><p>Same room. Different chaos.</p></div>
+          <div class="room-title"><h1 id="room-heading">The lounge <span aria-hidden="true">✳</span></h1><p id="room-subtitle">Same room. Different chaos.</p></div>
           <div class="presence-pill"><span id="status-dot" class="tiny-dot"></span><span id="connection-status" role="status">Connecting…</span><span id="online-count"></span></div>
+          <button id="watch-open" class="room-action" type="button" title="Watch together" aria-label="Watch together">▶ <span>Watch</span></button>
+          <button id="create-room" class="room-action" type="button" title="Create a private room" aria-label="Create a private room">＋ <span>Room</span></button>
+          <a id="lounge-back" class="room-action hidden" href="/" title="Back to public lounge" aria-label="Back to public lounge">←</a>
+          <button id="invite-open" class="room-action" type="button" title="Invite friends" aria-label="Invite friends">↗ <span>Invite</span></button>
           <button class="theme-toggle" type="button" aria-label="Switch to light mode"><span class="theme-glyph" aria-hidden="true">☀</span><span class="theme-label">Light mode</span></button>
           <button id="leave-button" class="icon-button" type="button" title="Leave room" aria-label="Leave room"><svg class="icon"><use href="#icon-leave"/></svg></button>
         </header>
-        <div class="room-banner"><svg class="icon"><use href="#icon-spark"/></svg><span>Welcome to the good part of the internet.</span><span class="banner-tag">YOU BELONG HERE</span></div>
+        <nav class="conversation-tools" aria-label="Conversation tools"><button id="search-open" type="button">⌕ Find something <kbd>Ctrl K</kbd></button><span class="tools-spacer"></span><button id="save-room" class="hidden" type="button">☆ Save room</button><button id="rooms-open" type="button">Your rooms ↗</button></nav>
+        <div class="room-banner"><svg class="icon"><use href="#icon-spark"/></svg><span id="banner-copy">Find your people. Follow an invite, or start your own room.</span><button id="party-open" class="party-banner-button hidden" type="button">Invite the lounge ↗</button><span id="banner-tag" class="banner-tag">YOUR NEXT HANGOUT STARTS HERE</span></div>
+        <section id="watch-panel" class="watch-panel hidden" aria-label="Watch together">
+          <div class="watch-heading"><div><span class="eyebrow">WATCH TOGETHER</span><strong id="watch-host">Start a watch party</strong></div><div class="watch-view-actions"><button id="watch-theater" type="button" aria-pressed="false" title="Enlarge the video while keeping chat open">⛶ Theater view</button><button id="watch-hide" type="button" aria-label="Hide watch panel">×</button></div></div>
+          <div id="watch-stage" class="watch-stage"><button id="watch-join" type="button">▶ Join the watch party</button></div>
+          <p id="watch-status" role="status">YouTube and direct video links. Same moment, same room.</p>
+          <div class="watch-controls"><button id="watch-resync" type="button">↻ Resync</button><button id="watch-claim" type="button" class="hidden">Become host</button><button id="watch-stop" type="button" class="hidden">End party</button><button id="party-watch-open" class="party-banner-button" type="button">Invite the lounge ↗</button></div>
+          <p class="watch-footnote">The host's play, pause and seeking sync to the room. Tap the player if your browser pauses playback.</p>
+        </section>
+        <div id="watch-divider" class="watch-divider" role="separator" tabindex="0" aria-label="Resize video and chat; use left and right arrow keys" aria-orientation="vertical" aria-controls="watch-panel message-scroll" aria-valuemin="42" aria-valuemax="78" aria-valuenow="64" title="Drag to resize video and chat"><span></span></div>
         <div id="message-scroll" class="message-scroll">
-          <div id="dvd-saver" class="dvd-saver" aria-hidden="true"><strong>DVD</strong><span>CHATTER</span></div>
+          <div id="dvd-saver" class="dvd-saver" aria-hidden="true"><strong>DVD</strong><span>DAMNCHAT</span></div>
           <div class="history-controls"><button id="load-older" class="quiet-button hidden" type="button">Load earlier messages</button></div>
           <div id="empty-state"><div class="empty-avatars"><img src="/static/avatars/facepalm.png" alt=""><img src="/static/avatars/gigachad.webp" alt=""><img src="/static/avatars/handsome-squidward.png" alt=""></div><span class="eyebrow">THE MIC IS YOURS</span><h2>Be the plot twist.<br>Say hello first.</h2><p>Everyone in the room will see your message.</p></div>
           <div id="messages" role="log" aria-label="Group messages" aria-live="polite" aria-relevant="additions"></div>
         </div>
-        <button id="new-messages" class="new-messages hidden" type="button"><svg class="icon"><use href="#icon-down"/></svg>New messages</button>
+        <button id="new-messages" class="new-messages hidden" type="button"><span id="new-message-label">Back to latest ↓</span></button>
         <footer class="composer-footer">
           <p id="room-error" class="error" role="alert"></p>
+          <div id="reply-preview" class="reply-preview hidden"><span id="reply-label"></span><button id="reply-cancel" type="button" aria-label="Cancel reply">×</button></div>
           <div id="image-preview" class="image-preview hidden"><img id="image-preview-thumb" alt="Selected image preview"><span id="image-preview-name"></span><button id="remove-image" type="button" aria-label="Remove selected image"><svg class="icon"><use href="#icon-close"/></svg></button></div>
           <form id="message-form" class="composer">
             <span id="composer-avatar" class="avatar avatar-small"></span>
             <input id="image-input" class="sr-only" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
             <button id="image-button" class="attachment-button" type="button" aria-label="Attach image"><svg class="icon"><use href="#icon-image"/></svg></button>
             <label for="message-input" class="sr-only">Message the group</label>
-            <textarea id="message-input" rows="1" maxlength="2000" placeholder="Type a message or paste a video link…"></textarea>
+            <textarea id="message-input" rows="1" maxlength="2000" placeholder="Type a message or share a link…"></textarea>
             <button id="send-button" type="submit" aria-label="Send message" disabled><span id="send-label">Send</span><svg class="icon"><use href="#icon-send"/></svg></button>
           </form>
           <div class="composer-note"><span>Chatting as <strong id="current-name"></strong></span><span class="keyboard-hint"><kbd>Enter</kbd> to send <span>·</span> <kbd>Shift + Enter</kbd> for a new line</span><span id="character-count">0 / 2,000</span></div>
@@ -97,6 +119,15 @@
       </section>
     </section>
   </main>
-  <script src="/static/app.js?v=18" defer></script>
+  <dialog id="invite-dialog" class="hangout-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close invite">×</button></form><span class="eyebrow">BETTER WITH YOUR PEOPLE</span><h2>Save them a seat.</h2><p id="invite-description">Send this link to your friends.</p><label for="invite-link" class="sr-only">Room invitation link</label><input id="invite-link" readonly><button id="invite-copy" class="primary-button" type="button">Copy invite link ↗</button><p id="invite-status" role="status"></p></dialog>
+  <dialog id="watch-dialog" class="hangout-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close watch setup">×</button></form><span class="eyebrow">PRESS PLAY. STAY TOGETHER.</span><h2>Put something on.</h2><p>Paste a YouTube link or a direct HTTPS MP4 / WebM video link.</p><form id="watch-form"><label for="watch-url" class="sr-only">Video link</label><input id="watch-url" type="url" required placeholder="Paste a video link…" maxlength="2048"><button class="primary-button" type="submit">Start watch party ▶</button></form><p id="watch-error" class="error" role="alert"></p></dialog>
+  <dialog id="party-dialog" class="hangout-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close party invitation">×</button></form><span class="eyebrow">MAKE ROOM FOR GOOD COMPANY</span><h2>Save a seat for someone.</h2><p>Post an invitation in the public lounge. One invitation per room every four minutes. Cards expire after 30 minutes.</p><div id="party-preview"></div><form id="party-form"><label for="party-note">Say something inviting</label><input id="party-note" maxlength="160" placeholder="Join us. This is better together."><label class="party-consent"><input id="party-consent" type="checkbox" required><span>I understand everyone in the public lounge will get this room's link and can read its messages and images.</span></label><button id="party-submit" class="primary-button" type="submit">Post invitation to the lounge ↗</button></form><p id="party-feedback" role="status"></p><p id="party-countdown"></p></dialog>
+  <dialog id="saved-dialog" class="hangout-dialog return-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close saved rooms">×</button></form><span class="eyebrow">A FEW PLACES TO BELONG</span><h2>Your little corner.</h2><p>Keep rooms you want to return to. Names and links stay in this browser—not in a public directory. Anyone using this browser profile can access them.</p><form id="save-room-form" class="hidden"><label for="saved-room-label">A name just for you</label><div class="save-room-fields"><input id="saved-room-label" maxlength="40" placeholder="The late-night crew" required><button type="submit">Save room</button></div></form><p id="saved-feedback" role="status"></p><div id="saved-rooms-list"></div><p id="saved-empty">No saved rooms yet. Join a private room and tap ☆ Save room to keep it here.</p><small>Up to 12 rooms. Clearing browser storage removes these bookmarks, not the rooms.</small></dialog>
+  <dialog id="search-dialog" class="hangout-dialog search-dialog"><form method="dialog"><button class="dialog-close" aria-label="Close chat search">×</button></form><span class="eyebrow">IT'S SOMEWHERE IN THE CHAT</span><h2>Find that thing.</h2><label class="sr-only" for="search-query">Search loaded messages or names</label><input id="search-query" type="search" maxlength="200" placeholder="A message, a name, that link…"><div class="search-filters" role="group" aria-label="Filter messages"><button data-search-filter="all" type="button" aria-pressed="true">Everything</button><button data-search-filter="links" type="button" aria-pressed="false">Links</button><button data-search-filter="photos" type="button" aria-pressed="false">Photos</button><button data-search-filter="invites" type="button" aria-pressed="false">Invites</button></div><p id="search-count" role="status"></p><div id="search-results"></div><p id="search-empty" class="hidden">No matches in the loaded history. Try another word or load earlier messages.</p><button id="search-older" class="quiet-button hidden" type="button">Search further back · load 100 earlier messages</button><p id="search-feedback" role="status"></p><small>Search stays in this browser and covers this room's loaded history only.</small></dialog>
+  <script src="/static/link-media.js?v=1" defer></script>
+  <script src="/static/hangout.js?v=4" defer></script>
+  <script src="/static/return-ui.js?v=1" defer></script>
+  <script src="/static/watch-layout.js?v=1" defer></script>
+  <script src="/static/app.js?v=24" defer></script>
 </body>
 </html>

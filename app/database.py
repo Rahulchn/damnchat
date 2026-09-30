@@ -27,3 +27,10 @@ class Database:
                 await connection.execute(text(
                     "ALTER TABLE group_messages ADD COLUMN image_url VARCHAR(80)"
                 ))
+            if "room_id" not in columns:
+                await connection.execute(text("ALTER TABLE group_messages ADD COLUMN room_id VARCHAR(32) NOT NULL DEFAULT 'main'"))
+            if "reply_to_id" not in columns:
+                await connection.execute(text("ALTER TABLE group_messages ADD COLUMN reply_to_id INTEGER"))
+            if "party_json" not in columns:
+                await connection.execute(text("ALTER TABLE group_messages ADD COLUMN party_json TEXT"))
+            await connection.execute(text("CREATE INDEX IF NOT EXISTS ix_group_messages_room_id ON group_messages(room_id)"))

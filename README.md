@@ -1,6 +1,16 @@
-# Chatter — one shared group chat
+# damnchat — a place to hang out
 
-Enter a display name and join the room. Everyone sees the same conversation, with live messages and saved history. There are no passwords, accounts, or login tokens.
+Enter a nickname and join the public lounge, or create an invite room for friends. No account is required. Messages support replies and emoji reactions, with saved history per room.
+
+Invite rooms use an unguessable link, not accounts: anyone holding the link can read its history and images. They are not end-to-end encrypted. Keep invite links private.
+
+**Your rooms** saves up to 12 private-room bookmarks with personal labels in this browser's local storage. It does not publish a room directory or sync bookmarks to an account. Other people using the same browser profile can use these links; clearing browser storage removes the bookmarks but not the server's room history. Removing a bookmark does not delete a room.
+
+**Find something** (Ctrl/Cmd+K inside a room) searches loaded messages and names, with Links, Photos and Invites filters. Load earlier history from the search dialog to expand the search. Results and quoted replies jump to the original loaded message. New messages received while the tab is hidden or while reading earlier messages show an unread count; this is not a push notification or an offline unread tracker.
+
+The Watch button in private rooms starts synchronized YouTube or direct HTTPS MP4/WebM playback beside chat. The room fills the browser window; watching hides the decorative sidebar. Theater view enlarges the player while keeping chat and the composer visible. Drag the divider on desktop, or focus it and use Left/Right (Home/End for limits), to choose your video/chat balance without restarting playback. Phones stack the player above chat, with a larger theater option. The public lounge has no watch party controls. The host controls play, pause and seeking; guests can resync or take over after the host disconnects. Each viewer loads media directly from its provider. Provider embedding restrictions and browser autoplay rules still apply; this does not bypass age gates, logins or download restrictions.
+
+Private rooms can explicitly post an invitation to the public lounge using **Invite the lounge**. The confirmation warns that this publishes the room link and makes its history accessible to everyone in the lounge. The server permits one invitation per room every four minutes, including across members, reconnects and restarts. Cloud hosting additionally rate-limits invitations across rooms per connection. Cards expire after 30 minutes (the room link itself is not revoked). YouTube invitations show a thumbnail; direct videos use a play graphic without fetching video files for public viewers. Video previews are snapshots at sharing time, not claims that a party is still running.
 
 Messages can include an optional PNG, JPEG, WebP, or GIF image up to 5 MB. The
 server validates and re-encodes images before saving them, which removes embedded
@@ -15,11 +25,21 @@ There is also a separate Cloudflare Workers version for always-on hosting withou
 keeping this PC or a tunnel running. It uses the same frontend, with a
 SQLite-backed Durable Object for chat history and re-encoded image uploads.
 
-Pasted YouTube, public Google Drive, Vimeo, Instagram, TikTok, Dailymotion,
-Streamable, Pexels, xHamster, and direct MP4/WebM/Ogg links show a player after
-the viewer clicks Play in chat. The viewer's browser contacts the video provider;
-the chat server does not fetch the link. Unrecognized URLs remain clickable links.
-Private or removed media and providers that block embedding may not play.
+Links are classified before showing a player. Spotify song, album, playlist, artist,
+show and episode links use the official Spotify embed; MP3/M4A/WAV/Ogg and other
+recognized audio-file links use audio controls. Spotify decides whether a listener
+gets full playback, a preview, or a sign-in prompt. Spotify short links remain link
+cards with a prompt to share the full `open.spotify.com` URL.
+
+YouTube, Vimeo, Instagram Reels, TikTok, Dailymotion, Streamable, Pexels, xHamster,
+and direct MP4/WebM/OGV links use video players. Drive links use a generic file
+preview because they may contain documents, audio or video; Instagram posts use
+post embeds. Direct raster image links offer an image preview. Ordinary webpages
+stay link cards, with no misleading video-play button. Media loads only when a
+viewer activates the card; the chat server does not fetch pasted URLs. Pages that
+hide their media stream, private or removed media, and providers that block
+embedding may not play. Music and other non-video links are not offered as watch
+parties.
 
 ## Run locally
 

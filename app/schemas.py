@@ -30,6 +30,7 @@ class OutgoingMessage(BaseModel):
     type: Literal["message"]
     body: str = Field(default="", max_length=2000)
     image_url: str | None = Field(default=None, max_length=80)
+    reply_to_id: int | None = Field(default=None, gt=0)
 
     @field_validator("body", mode="before")
     @classmethod

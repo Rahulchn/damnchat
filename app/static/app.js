@@ -99,7 +99,10 @@ el("message-input").addEventListener("input",resizeComposer);
 const state = { name: "", socket: null, joined: false, ready: false, timer: null,
   retry: 0, messages: new Map(), hasMore: false, pending: null, pendingTimer: null,
   historyVersion: 0, image: null, uploading: false, uploadController: null,
-  joinTimer: null, session: 0 };
+  joinTimer: null, session: 0, reply: null, nodes: new Map(), ownReactions: new Set() };
+hangout.init({el, makeId, state:() => state, videoDetails, leave});
+returnUI.init({el,state:() => state,room:() => hangout.room,error:roomError,loadOlder});
+watchLayout.init(el,resizeComposer);
 
 function updateSendState() {
   const hasContent=!!el("message-input").value.trim() || !!state.image;
@@ -116,6 +119,9 @@ function ready(value, label) {
   el("status-dot").parentElement.setAttribute("aria-label",label);
   updateSendState();
   el("join-button").disabled = state.joined && !value;
+  el("watch-open").disabled = !value;
+  if (!value) hangout.partyPending = false;
+  hangout.updateParty();
   if (!value) el("online-count").textContent = "";
 }
 function clearPending() {
@@ -135,123 +141,8 @@ function cleanUrlCandidate(value) {
 }
 
 function videoDetails(value) {
-  let url;
-  try { url = new URL(cleanUrlCandidate(value)); } catch { return null; }
-  if (!['http:', 'https:'].includes(url.protocol)) return null;
-
-  const host = url.hostname.toLowerCase().replace(/^www\./, "");
-  let videoId = "";
-  if (host === "youtu.be") {
-    videoId = url.pathname.split("/").filter(Boolean)[0] || "";
-  } else if (["youtube.com", "m.youtube.com", "music.youtube.com", "youtube-nocookie.com"].includes(host)) {
-    if (url.pathname === "/watch") videoId = url.searchParams.get("v") || "";
-    else {
-      const parts = url.pathname.split("/").filter(Boolean);
-      if (["shorts", "embed", "live"].includes(parts[0])) videoId = parts[1] || "";
-    }
-  }
-  if (/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
-    return {
-      kind: "embed", provider: "YouTube", title: "YouTube video",
-      source: url.href, player: `https://www.youtube-nocookie.com/embed/${videoId}`,
-    };
-  }
-
-  if (host === "drive.google.com") {
-    const pathMatch = url.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]{10,})/);
-    const driveId = pathMatch?.[1] || url.searchParams.get("id") || "";
-    if (/^[A-Za-z0-9_-]{10,}$/.test(driveId)) {
-      const resourceKey = url.searchParams.get("resourcekey");
-      return {
-        kind: "embed", provider: "Google Drive", title: "Google Drive video",
-        source: url.href, player: `https://drive.google.com/file/d/${driveId}/preview${resourceKey ? `?resourcekey=${encodeURIComponent(resourceKey)}` : ""}`,
-      };
-    }
-  }
-
-  if (host === "vimeo.com" || host === "player.vimeo.com") {
-    const parts = url.pathname.split("/").filter(Boolean);
-    const vimeoId = [...parts].reverse().find(part => /^\d+$/.test(part));
-    if (vimeoId) {
-      return {
-        kind: "embed", provider: "Vimeo", title: "Vimeo video",
-        source: url.href, player: `https://player.vimeo.com/video/${vimeoId}`,
-      };
-    }
-  }
-
-  if (host === "instagram.com") {
-    const instagramMatch = url.pathname.match(/^\/(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/);
-    if (instagramMatch) {
-      return {
-        kind: "embed", provider: "Instagram", title: "Instagram post or Reel",
-        source: url.href, player: `https://www.instagram.com/p/${instagramMatch[1]}/embed/`, vertical: true,
-      };
-    }
-  }
-
-  if (["tiktok.com", "m.tiktok.com"].includes(host)) {
-    const tiktokMatch = url.pathname.match(/\/video\/(\d{10,24})/);
-    if (tiktokMatch) {
-      return {
-        kind: "embed", provider: "TikTok", title: "TikTok video",
-        source: url.href, player: `https://www.tiktok.com/player/v1/${tiktokMatch[1]}?autoplay=0`, vertical: true,
-      };
-    }
-  }
-
-  if (["dailymotion.com", "dai.ly"].includes(host)) {
-    const parts = url.pathname.split("/").filter(Boolean);
-    const dailymotionId = host === "dai.ly" ? parts[0] : (parts[0] === "video" ? parts[1] : "");
-    if (/^[A-Za-z0-9]+$/.test(dailymotionId || "")) {
-      return {
-        kind: "embed", provider: "Dailymotion", title: "Dailymotion video",
-        source: url.href, player: `https://geo.dailymotion.com/player.html?video=${dailymotionId}`,
-      };
-    }
-  }
-
-  if (host === "streamable.com") {
-    const streamableId = url.pathname.split("/").filter(Boolean).pop() || "";
-    if (/^[A-Za-z0-9]+$/.test(streamableId)) {
-      return {
-        kind: "embed", provider: "Streamable", title: "Streamable video",
-        source: url.href, player: `https://streamable.com/e/${streamableId}`,
-      };
-    }
-  }
-
-  if (host === "pexels.com") {
-    const match = url.pathname.match(/^\/video\/(?:[^/]*-)?(\d+)\/?$/);
-    if (match) {
-      return {
-        kind: "direct", provider: "Pexels", title: "Pexels video",
-        source: url.origin + url.pathname,
-        player: `https://www.pexels.com/download/video/${match[1]}/`,
-      };
-    }
-  }
-
-  if (["xhamster.com", "xhamster46.desi"].includes(host)) {
-    const match = url.pathname.match(/^\/videos\/[^/]*-([A-Za-z0-9]{6,20})\/?$/);
-    if (match) {
-      return {
-        kind: "embed", provider: "xHamster", title: "Shared video",
-        source: url.origin + url.pathname,
-        player: `${url.origin}/embed/${match[1]}`,
-        alternatePlayer: host === "xhamster.com" ? null : `https://xhamster.com/embed/${match[1]}`,
-      };
-    }
-  }
-
-  if (/\.(mp4|webm|ogg|ogv)$/i.test(url.pathname)) {
-    return {kind: "direct", provider: "Video", title: "Shared video", source: url.href, player: url.href};
-  }
-  return null;
-}
-
-function firstVideoIn(text) {
-  return [...text.matchAll(URL_PATTERN)].map(match => videoDetails(match[0])).find(Boolean) || null;
+  const media = linkMedia.classify(value);
+  return media?.type === "video" ? media : null;
 }
 
 function firstUrlIn(text) {
@@ -277,8 +168,11 @@ function appendLinkedText(container, text) {
   container.append(document.createTextNode(text.slice(cursor)));
 }
 
-function videoNode(details) {
+function mediaNode(details) {
   const card = document.createElement("div"); card.className = "video-card";
+  const audio = details.type === "audio", music = details.type === "music", image = details.type === "image";
+  if (audio || music) card.classList.add("audio-card");
+  if (image) card.classList.add("shared-image-card");
   if (details.vertical) card.classList.add("is-vertical");
   const frame = document.createElement("div"); frame.className = "video-player-wrap";
   let player;
@@ -287,23 +181,45 @@ function videoNode(details) {
     player.title = details.title; player.loading = "lazy";
     player.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
     player.referrerPolicy = "strict-origin-when-cross-origin"; player.allowFullscreen = true;
+    if (music) { player.height = String(details.height); frame.style.height = details.height + "px"; }
     if (details.provider === "xHamster") {
       // Let the provider request cookie access for its own age/session flow,
       // while still preventing top-level redirects and pop-up windows.
       player.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation allow-storage-access-by-user-activation");
     }
+  } else if (image) {
+    player = document.createElement("img"); player.alt = "Image shared in chat"; player.decoding = "async";
   } else {
-    player = document.createElement("video");
+    player = document.createElement(audio ? "audio" : "video");
     player.controls = true; player.preload = "metadata";
-    player.playsInline = true; player.setAttribute("controlslist", "nodownload");
+    player.playsInline = true;
+  }
+  const status = document.createElement("p");
+  status.className = "video-provider-note";
+  status.setAttribute("role", "status");
+  function startPlayback() {
+    if (details.kind === "direct") {
+      status.textContent = audio ? "Loading audio…" : "Loading video…";
+      status.hidden = false;
+      player.addEventListener("loadedmetadata", () => { status.hidden = true; }, {once:true});
+      player.addEventListener("error", () => {
+        frame.replaceChildren();
+        status.textContent = `This ${audio ? "audio" : "video"} file couldn't play here. It may be unavailable, restricted, or in an unsupported format.`;
+        status.hidden = false;
+      }, {once:true});
+    }
+    if (image) player.addEventListener("error", () => { frame.replaceChildren(); status.textContent = "This image couldn't load. Open the original link to check it."; status.hidden = false; }, {once:true});
+    player.src = details.player;
+    frame.replaceChildren(player);
+    if (details.kind === "direct") player.play().catch(() => {
+      // The browser may require another tap; keep its visible controls.
+    });
   }
   const activate=document.createElement("button");
   activate.type="button"; activate.className="video-activate";
-  activate.textContent=`▶ Play ${details.provider} in chat`;
-  activate.addEventListener("click",() => {
-    player.src=details.player;
-    frame.replaceChildren(player);
-  },{once:true});
+  activate.textContent = image ? "▧ View image in chat" : details.type === "file" ? "▤ Preview Drive file" :
+    details.type === "post" ? "View Instagram post" : music ? "♫ Listen on Spotify in chat" : audio ? "♫ Play audio in chat" : `▶ Play ${details.provider} in chat`;
+  activate.addEventListener("click",startPlayback,{once:true});
   frame.append(activate);
   if (details.alternatePlayer) {
     const retry = document.createElement("button");
@@ -320,6 +236,12 @@ function videoNode(details) {
   source.target = "_blank"; source.rel = "noopener noreferrer nofollow";
   source.textContent = `${details.provider} · Open original`;
   card.append(frame);
+  if (details.kind === "direct" || image) { status.hidden = true; card.append(status); }
+  if (music) {
+    const note = document.createElement("p"); note.className = "video-provider-note";
+    note.textContent = "Spotify controls playback availability; some listeners may get a preview or be asked to sign in.";
+    card.append(note);
+  }
   if (details.provider === "xHamster") {
     const note = document.createElement("p");
     note.className = "video-provider-note";
@@ -327,21 +249,38 @@ function videoNode(details) {
     card.append(note);
   }
   if (details.provider !== "xHamster") card.append(source);
+  if (details.type === "video" && hangout.room !== "main" && (details.provider === "YouTube" || (details.kind === "direct" && /\.(mp4|webm|ogv)(?:\?|$)/i.test(details.player)))) {
+    const together = document.createElement("button"); together.type = "button"; together.className = "video-source-link video-retry";
+    together.textContent = "▶ Watch this together";
+    together.addEventListener("click", () => {
+      el("watch-url").value = details.source;
+      el("watch-error").textContent = "";
+      el("watch-dialog").showModal();
+    });
+    card.append(together);
+  }
   return card;
 }
 
 function linkFallbackNode(url) {
-  const link = document.createElement("a"); link.className = "link-fallback";
+  const card = document.createElement("div"); card.className = "link-fallback";
+  const link = document.createElement("a");
   link.href = url.href; link.target = "_blank"; link.rel = "noopener noreferrer nofollow";
   const host = document.createElement("strong"); host.textContent = url.hostname.replace(/^www\./, "");
   const note = document.createElement("span"); note.textContent = "Open link ↗";
   link.append(host, note);
-  return link;
+  card.append(link);
+  if (["spotify.link","spoti.fi"].includes(url.hostname.toLowerCase())) {
+    const tip = document.createElement("span"); tip.textContent = "Spotify short link · Share the full open.spotify.com song link for an in-chat player.";
+    card.append(tip);
+  }
+  return card;
 }
 
 function messageNode(message) {
   const mine = message.client_id === clientId;
   const item = document.createElement("article"); item.className = "message" + (mine ? " mine" : "");
+  item.id = "message-" + message.id;
   const content = document.createElement("div"); content.className = "message-content";
   const meta = document.createElement("div"); meta.className = "message-meta";
   const name = document.createElement("strong"); name.textContent = message.name + (mine ? " · you" : "");
@@ -349,27 +288,70 @@ function messageNode(message) {
   time.dateTime = message.created_at; time.title = date.toLocaleString();
   time.textContent = date.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
   const body = document.createElement("div"); body.className = "bubble";
+  if (message.reply_to) {
+    const quote = document.createElement("button"); quote.type = "button"; quote.className = "quoted-message";
+    quote.setAttribute("aria-label", "Jump to original message from " + message.reply_to.name);
+    quote.addEventListener("click", () => returnUI.jump(message.reply_to.id));
+    const author = document.createElement("strong"); author.textContent = "↳ " + message.reply_to.name;
+    const excerpt = document.createElement("span"); excerpt.textContent = message.reply_to.body || (message.reply_to.image ? "Shared an image" : "Message");
+    quote.append(author, excerpt); body.append(quote);
+  }
   if (message.image_url) {
     body.classList.add("image-bubble");
-    const link=document.createElement("a"); link.href=message.image_url;
+    const link=document.createElement("a"); link.href=hangout.scoped(message.image_url);
     link.target="_blank"; link.rel="noopener"; link.title="Open full-size image";
-    const image=document.createElement("img"); image.src=message.image_url;
+    const image=document.createElement("img"); image.src=hangout.scoped(message.image_url);
     image.alt="Image shared by "+message.name; image.loading="lazy"; image.decoding="async";
     link.append(image); body.append(link);
   }
-  if (message.body) {
+  if (message.party) {
+    const card = hangout.partyCard(message);
+    if (card) { body.classList.add("party-bubble"); body.append(card); }
+  } else if (message.body) {
     const caption=document.createElement("div"); caption.className="message-caption";
     appendLinkedText(caption,message.body); body.append(caption);
-    const video=firstVideoIn(message.body);
-    if (video) { body.classList.add("video-bubble"); body.append(videoNode(video)); }
+    const media=linkMedia.first(message.body);
+    if (media) { body.classList.add("video-bubble"); body.append(mediaNode(media)); }
     else {
       const linkedUrl=firstUrlIn(message.body);
       if (linkedUrl) { body.classList.add("link-bubble"); body.append(linkFallbackNode(linkedUrl)); }
     }
   }
   meta.append(name,time); content.append(meta,body);
+  const actions = document.createElement("div"); actions.className = "message-actions";
+  const reply = document.createElement("button"); reply.type = "button"; reply.textContent = "↳ Reply";
+  reply.addEventListener("click", () => {
+    state.reply = message;
+    el("reply-label").textContent = `Replying to ${message.name}: ${message.body.slice(0,100) || "Image"}`;
+    el("reply-preview").classList.remove("hidden"); el("message-input").focus();
+  });
+  const react = document.createElement("button"); react.type = "button"; react.textContent = "+ React"; react.setAttribute("aria-expanded", "false");
+  const picker = document.createElement("div"); picker.className = "reaction-picker hidden";
+  for (const emoji of ["🔥", "😂", "❤️", "👀", "💀"]) {
+    const button = document.createElement("button"); button.type = "button"; button.textContent = emoji; button.setAttribute("aria-label", "React " + emoji);
+    button.addEventListener("click", () => { hangout.send({type:"reaction", message_id:message.id, emoji}); picker.classList.add("hidden"); react.setAttribute("aria-expanded", "false"); });
+    picker.append(button);
+  }
+  react.addEventListener("click", () => { picker.classList.toggle("hidden"); react.setAttribute("aria-expanded", String(!picker.classList.contains("hidden"))); });
+  actions.append(reply, react, picker);
+  const reactions = document.createElement("div"); reactions.className = "message-reactions";
+  content.append(reactions, actions); renderReactions(reactions, message);
   item.append(avatarNode(message.avatar,message.name),content); return item;
 }
+function renderReactions(target, message) {
+  target.replaceChildren();
+  for (const {emoji, count} of message.reactions || []) {
+    if (!count) continue;
+    const button = document.createElement("button"); button.type = "button";
+    button.textContent = `${emoji} ${count}`;
+    button.setAttribute("aria-label", `${emoji}: ${count} reactions`);
+    button.setAttribute("aria-pressed", String(state.ownReactions.has(`${message.id}:${emoji}`)));
+    button.addEventListener("click", () => hangout.send({type:"reaction", message_id:message.id, emoji}));
+    target.append(button);
+  }
+}
+function cancelReply() { state.reply = null; el("reply-preview").classList.add("hidden"); }
+el("reply-cancel").addEventListener("click", cancelReply);
 function renderMessages() {
   const messages = [...state.messages.values()].sort((a,b) => a.id-b.id);
   const nodes=[]; let previousDay="";
@@ -383,15 +365,24 @@ function renderMessages() {
         date.toLocaleDateString([], {month:"long",day:"numeric",year:"numeric"});
       nodes.push(divider); previousDay=day;
     }
-    nodes.push(messageNode(message));
+    if (!state.nodes.has(message.id)) state.nodes.set(message.id, messageNode(message));
+    nodes.push(state.nodes.get(message.id));
   }
-  el("messages").replaceChildren(...nodes);
+  const container = el("messages"), wanted = new Set(nodes);
+  // Preserve existing media elements when new messages arrive.
+  for (const child of [...container.children]) if (!wanted.has(child)) child.remove();
+  nodes.forEach((node, index) => {
+    if (container.children[index] !== node) container.insertBefore(node, container.children[index] || null);
+  });
   el("empty-state").classList.toggle("hidden", !!messages.length);
   el("load-older").classList.toggle("hidden", !state.hasMore);
+  hangout.expireCards();
+  if (el("search-dialog").open) returnUI.renderSearch();
 }
 function bottom() {
   el("message-scroll").scrollTop = el("message-scroll").scrollHeight;
   el("new-messages").classList.add("hidden");
+  returnUI.readIfVisible();
 }
 el("new-messages").addEventListener("click",bottom);
 el("message-scroll").addEventListener("scroll", () => {
@@ -402,7 +393,7 @@ function connect(session=state.session) {
   if (!state.joined || session!==state.session) return;
   clearTimeout(state.timer);
   ready(false, state.retry ? "Reconnecting…" : "Connecting…");
-  const socket = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+  const socket = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + hangout.scoped("/ws"));
   state.socket = socket;
   socket.addEventListener("open", () => {
     if (state.socket !== socket) return;
@@ -418,28 +409,56 @@ function connect(session=state.session) {
       storage.set("group_name",state.name); storage.set("group_client_id",clientId);
       state.historyVersion++;
       state.messages = new Map(payload.messages.map(m => [m.id,m]));
+      state.nodes.clear();
+      state.ownReactions = new Set((payload.own_reactions || []).map(item => `${item.message_id}:${item.emoji}`));
+      hangout.sessionId = payload.session_id;
       state.hasMore = payload.has_more;
       el("join-view").classList.add("hidden"); el("room-view").classList.remove("hidden");
+      document.body.classList.add("in-room");
       el("current-name").textContent = state.name;
       el("sidebar-name").textContent = state.name;
       showAvatar("sidebar-avatar",chosenAvatar); showAvatar("composer-avatar",chosenAvatar);
       ready(true,"Live"); renderMessages(); bottom(); resizeComposer();
+      hangout.receive(payload.watch || null, payload.server_time);
+      hangout.partyState({next_at:payload.party_next_at || 0,server_time:payload.server_time});
+      returnUI.connected();
       if (matchMedia("(min-width: 761px)").matches) el("message-input").focus();
     } else if (payload.type === "presence") {
       el("online-count").textContent = payload.count + " online";
+    } else if (payload.type === "watch") {
+      hangout.receive(payload.watch, payload.server_time);
+    } else if (payload.type === "party_shared" || payload.type === "party_error") {
+      hangout.partyState(payload);
+    } else if (payload.type === "watch_error") {
+      el("watch-error").textContent = payload.message;
+      el("watch-status").textContent = payload.message;
+    } else if (payload.type === "reaction") {
+      const message = state.messages.get(payload.message_id);
+      if (payload.client_id === clientId) {
+        const key = `${payload.message_id}:${payload.emoji}`;
+        if (payload.active) state.ownReactions.add(key); else state.ownReactions.delete(key);
+      }
+      if (message) {
+        message.reactions = (message.reactions || []).filter(item => item.emoji !== payload.emoji);
+        if (payload.count) message.reactions.push({emoji:payload.emoji, count:payload.count});
+        const target = state.nodes.get(message.id)?.querySelector(".message-reactions");
+        if (target) renderReactions(target, message);
+      }
     } else if (payload.type === "message") {
       const message = payload.message;
       const scroll = el("message-scroll");
       const nearBottom = scroll.scrollHeight-scroll.scrollTop-scroll.clientHeight < 100;
+      if (!state.messages.has(message.id)) returnUI.receive(message.id,message.client_id === clientId,nearBottom);
       state.messages.set(message.id,message);
       if (state.pending && message.client_id === clientId && message.body === state.pending.body &&
-          (message.image_url || null) === state.pending.imageUrl) {
+          (message.image_url || null) === state.pending.imageUrl && (message.reply_to_id || null) === state.pending.replyToId) {
         if (el("message-input").value === state.pending.draft) el("message-input").value = "";
         clearSelectedImage();
+        cancelReply();
         clearPending(); roomError(""); resizeComposer();
       }
       renderMessages();
-      if (nearBottom || message.client_id === clientId) bottom();
+      if ((nearBottom && !document.hidden && !document.querySelector("dialog[open]")) || message.client_id === clientId) bottom();
       else el("new-messages").classList.remove("hidden");
     } else if (payload.type === "error") {
       if (!state.ready) {
@@ -462,6 +481,10 @@ function connect(session=state.session) {
   });
 }
 function leave() {
+  document.body.classList.remove("in-room");
+  returnUI.reset();
+  hangout.leave(); cancelReply(); state.nodes.clear();
+  el("message-input").value = "";
   state.joined = false; state.historyVersion++; state.session++;
   clearTimeout(state.timer); clearTimeout(state.joinTimer);
   state.joinTimer=null;
@@ -482,6 +505,7 @@ el("join-form").addEventListener("submit", event => {
   event.preventDefault();
   const name = el("display-name").value.trim().replace(/\s+/g," ");
   if (!name || name.length>40) { el("join-error").textContent = "Enter a name between 1 and 40 characters."; return; }
+  if (!hangout.beforeJoin()) return;
   if (state.socket) { const old=state.socket; state.socket=null; old.close(); }
   clearTimeout(state.joinTimer);
   state.name=name; state.joined=true; state.retry=0; state.session++;
@@ -544,7 +568,7 @@ el("message-form").addEventListener("submit",async event => {
       el("send-label").textContent="Uploading…";
       const controller=new AbortController();
       state.uploadController=controller;
-      const response=await fetch("/api/uploads",{
+      const response=await fetch(hangout.scoped("/api/uploads"),{
         method:"POST", headers:{"Content-Type":selectedImage.file.type},
         body:selectedImage.file, signal:controller.signal,
       });
@@ -566,9 +590,10 @@ el("message-form").addEventListener("submit",async event => {
     }
     state.uploadController=null;
     state.uploading=false;
-    state.pending={body,draft:input.value,imageUrl};
+    const replyToId = state.reply?.id || null;
+    state.pending={body,draft:input.value,imageUrl,replyToId};
     el("send-label").textContent="Sending…"; updateSendState();
-    state.socket.send(JSON.stringify({type:"message",body,image_url:imageUrl}));
+    state.socket.send(JSON.stringify({type:"message",body,image_url:imageUrl,reply_to_id:replyToId}));
   }
   catch (error) {
     if (session!==state.session) return;
@@ -609,20 +634,22 @@ function animateDvd(time) {
   requestAnimationFrame(animateDvd);
 }
 requestAnimationFrame(animateDvd);
-el("load-older").addEventListener("click", async () => {
-  if (!state.messages.size || !state.hasMore) return;
+async function loadOlder() {
+  if (!state.messages.size || !state.hasMore || el("load-older").disabled) return false;
   const version=state.historyVersion;
   const first=Math.min(...state.messages.keys());
   const scroll=el("message-scroll"), height=scroll.scrollHeight, top=scroll.scrollTop;
   el("load-older").disabled=true;
   try {
-    const response=await fetch("/api/messages?before_id="+first+"&limit=100");
+    const response=await fetch(hangout.scoped("/api/messages?before_id="+first+"&limit=100"));
     if (!response.ok) throw new Error("History could not be loaded. Please try again.");
     const data=await response.json();
     if (version!==state.historyVersion || !state.joined) return;
     data.messages.forEach(m => state.messages.set(m.id,m));
     state.hasMore=data.has_more; renderMessages();
     scroll.scrollTop=top+scroll.scrollHeight-height;
-  } catch (error) { if (version===state.historyVersion) roomError(error.message); }
+    return true;
+  } catch (error) { if (version===state.historyVersion) roomError(error.message); return false; }
   finally { el("load-older").disabled=false; }
-});
+}
+el("load-older").addEventListener("click",loadOlder);

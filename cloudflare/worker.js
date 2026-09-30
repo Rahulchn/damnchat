@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { REACTIONS, validRoom, changeWatch, videoSource } from "./hangout.js";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_STORED_IMAGES_BYTES = 500 * 1024 * 1024;
@@ -71,8 +72,8 @@ async function visitorKey(request, salt) {
   return [...digest.subarray(0, 16)].map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function room(env) {
-  return env.ROOM.getByName("main");
+function room(env, request) {
+  return env.ROOM.getByName(new URL(request.url).searchParams.get("room") || "main");
 }
 
 function sameOrigin(request) {
@@ -88,7 +89,7 @@ async function uploadImage(request, env) {
   if (declaredLength > MAX_IMAGE_BYTES) return error("Images must be 5 MB or smaller.", 413);
 
   const key = await visitorKey(request, env.RATE_SALT);
-  const permit = await room(env).fetch(new Request(new URL("/internal/upload-permit", request.url), {
+  const permit = await env.ROOM.getByName("main").fetch(new Request(new URL("/internal/upload-permit", request.url), {
     method: "POST", headers: { "X-Chat-Visitor": key },
   }));
   if (!permit.ok) return permit;
@@ -121,7 +122,7 @@ async function uploadImage(request, env) {
   }
 
   const filename = `${crypto.randomUUID().replaceAll("-", "")}.webp`;
-  const stored = await room(env).fetch(new Request(new URL(`/internal/uploads/${filename}`, request.url), {
+  const stored = await room(env, request).fetch(new Request(new URL(`/internal/uploads/${filename}`, request.url), {
     method: "PUT", body: processed, headers: { "Content-Type": "image/webp" },
   }));
   if (!stored.ok) return stored;
@@ -132,6 +133,9 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
+    if ((path.startsWith("/api/") || path === "/ws") && !validRoom(url.searchParams.get("room") || "main")) {
+      return error("Invalid room invite.", 422);
+    }
     if (path === "/healthz" && request.method === "GET") return json({ ok: true });
 
     if (path === "/ws" && request.method === "GET") {
@@ -145,18 +149,18 @@ export default {
       const key = await visitorKey(request, env.RATE_SALT);
       const headers = new Headers(request.headers);
       headers.set("X-Chat-Visitor", key);
-      return room(env).fetch(new Request(request, { headers }));
+      return room(env, request).fetch(new Request(request, { headers }));
     }
 
     if (path === "/api/messages" && request.method === "GET") {
-      return room(env).fetch(request);
+      return room(env, request).fetch(request);
     }
     if (path === "/api/uploads" && request.method === "POST") {
       if (!env.RATE_SALT) return error("Server is missing RATE_SALT configuration.", 503);
       return uploadImage(request, env);
     }
     if (IMAGE_PATH.test(path) && request.method === "GET") {
-      return room(env).fetch(request);
+      return room(env, request).fetch(request);
     }
     if (path.startsWith("/api/") || path === "/ws") return error("Not found.", 404);
 
@@ -176,6 +180,7 @@ export default {
 export class ChatRoom extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
+    this.env = env;
     this.sql = ctx.storage.sql;
     this.sql.exec(`
       CREATE TABLE IF NOT EXISTS messages (
@@ -199,7 +204,15 @@ export class ChatRoom extends DurableObject {
         count INTEGER NOT NULL,
         expires_at INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS reactions (
+        message_id INTEGER NOT NULL, client_id TEXT NOT NULL, emoji TEXT NOT NULL,
+        PRIMARY KEY (message_id, client_id, emoji)
+      );
+      CREATE TABLE IF NOT EXISTS room_shares (room_id TEXT PRIMARY KEY, next_at INTEGER NOT NULL);
     `);
+    const messageColumns = this.sql.exec("PRAGMA table_info(messages)").toArray().map(column => column.name);
+    if (!messageColumns.includes("reply_to_id")) this.sql.exec("ALTER TABLE messages ADD COLUMN reply_to_id INTEGER");
+    if (!messageColumns.includes("party_json")) this.sql.exec("ALTER TABLE messages ADD COLUMN party_json TEXT");
     const imageColumns = this.sql.exec("PRAGMA table_info(images)").toArray().map(column => column.name);
     if (!imageColumns.includes("referenced")) {
       this.sql.exec("ALTER TABLE images ADD COLUMN referenced INTEGER NOT NULL DEFAULT 0");
@@ -212,7 +225,32 @@ export class ChatRoom extends DurableObject {
       "SELECT * FROM messages WHERE (? IS NULL OR id < ?) ORDER BY id DESC LIMIT ?",
       beforeId, beforeId, limit + 1,
     ).toArray();
-    return { messages: rows.slice(0, limit).reverse(), has_more: rows.length > limit };
+    return { messages: this.decorate(rows.slice(0, limit).reverse()), has_more: rows.length > limit };
+  }
+
+  decorate(rows) {
+    if (!rows.length) return [];
+    const placeholders = rows.map(() => "?").join(",");
+    const reactions = this.sql.exec(`SELECT message_id, emoji, COUNT(*) AS count FROM reactions WHERE message_id IN (${placeholders}) GROUP BY message_id, emoji`, ...rows.map(row => row.id)).toArray();
+    const parentIds = [...new Set(rows.map(row => row.reply_to_id).filter(Boolean))];
+    const parents = parentIds.length ? this.sql.exec(`SELECT id, name, body, image_url FROM messages WHERE id IN (${parentIds.map(() => "?").join(",")})`, ...parentIds).toArray() : [];
+    return rows.map(row => {
+      const parent = parents.find(item => item.id === row.reply_to_id);
+      const {party_json, ...fields} = row;
+      return {...fields, party:party_json ? JSON.parse(party_json) : null, reply_to:parent ? {id:parent.id, name:parent.name, body:parent.body.slice(0,160), image:!!parent.image_url} : null,
+        reactions:reactions.filter(item => item.message_id === row.id).map(({emoji,count}) => ({emoji,count}))};
+    });
+  }
+
+  watchSnapshot(exclude = null) {
+    const watch = this.ctx.storage.kv.get("watch");
+    if (!watch) return null;
+    return {...watch, host_online:this.joinedSockets(exclude).some(socket => socket.deserializeAttachment().session_id === watch.host_id)};
+  }
+
+  watchPresence(exclude) {
+    if (!this.joinedSockets(exclude).length) this.ctx.storage.kv.delete("watch");
+    this.broadcast({type:"watch", watch:this.watchSnapshot(exclude), server_time:Date.now()}, exclude);
   }
 
   takeRate(bucket, maximum, windowMs) {
@@ -246,6 +284,27 @@ export class ChatRoom extends DurableObject {
 
   async fetch(request) {
     const url = new URL(request.url);
+    // Only reachable through the internal DO binding, never from the public router.
+    if (url.pathname === "/internal/party-share" && request.method === "POST") {
+      const data = await request.json(), now = Date.now();
+      if (!validRoom(data.room_id) || data.room_id === "main" || !UUID.test(data.client_id) ||
+          typeof data.name !== "string" || data.name.length > 80 || !AVATARS.has(data.avatar) ||
+          typeof data.note !== "string" || data.note.length > 160) return error("Invalid invitation.", 400);
+      const next = this.sql.exec("SELECT next_at FROM room_shares WHERE room_id = ?", data.room_id).toArray()[0]?.next_at || 0;
+      if (next > now) return json({message:"This room has already sent an invite. Wait for the countdown.", next_at:next, server_time:now},429);
+      if (!this.takeRate(`party:${data.visitor}:${Math.floor(now/240000)}`, 3, 240000)) return json({message:"Too many invitations from this connection. Try again in four minutes."},429);
+      const nextAt = now + 240000;
+      const party = {room_id:data.room_id, video:videoSource(data.video), expires_at:now + 1800000};
+      let id;
+      this.ctx.storage.transactionSync(() => {
+        this.sql.exec("INSERT INTO messages (client_id,name,avatar,body,created_at,party_json) VALUES (?,?,?,?,?,?)",
+          data.client_id,data.name,data.avatar,data.note.trim() || "Come hang out with us.",new Date(now).toISOString(),JSON.stringify(party));
+        id = this.sql.exec("SELECT last_insert_rowid() AS id").toArray()[0].id;
+        this.sql.exec("INSERT INTO room_shares (room_id,next_at) VALUES (?,?) ON CONFLICT(room_id) DO UPDATE SET next_at=excluded.next_at",data.room_id,nextAt);
+      });
+      this.broadcast({type:"message",message:this.decorate(this.sql.exec("SELECT * FROM messages WHERE id = ?",id).toArray())[0]});
+      return json({next_at:nextAt,server_time:now});
+    }
     if (url.pathname === "/ws") {
       const visitor = request.headers.get("X-Chat-Visitor");
       if (!visitor || !/^[0-9a-f]{32}$/.test(visitor)) return error("Invalid visitor.", 400);
@@ -255,7 +314,7 @@ export class ChatRoom extends DurableObject {
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
       this.ctx.acceptWebSocket(server);
-      server.serializeAttachment({ visitor, joined: false });
+      server.serializeAttachment({ visitor, joined: false, room_id:url.searchParams.get("room") || "main", session_id:crypto.randomUUID() });
       return new Response(null, { status: 101, webSocket: client });
     }
 
@@ -362,6 +421,10 @@ export class ChatRoom extends DurableObject {
       this.send(socket, { type: "error", message: "Invalid message format." });
       return;
     }
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      this.send(socket, { type: "error", message: "Invalid message format." });
+      return;
+    }
     const member = socket.deserializeAttachment();
     if (!member?.joined) {
       const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/gu, " ") : "";
@@ -372,10 +435,50 @@ export class ChatRoom extends DurableObject {
         socket.close(1008, "Invalid join.");
         return;
       }
-      const joined = { visitor: member?.visitor || "unknown", joined: true, name, avatar, client_id: payload.client_id };
+      const joined = { visitor: member?.visitor || "unknown", joined: true, name, avatar, client_id: payload.client_id, session_id:member.session_id, room_id:member.room_id || "main" };
       socket.serializeAttachment(joined);
-      this.send(socket, { type: "welcome", name, avatar, client_id: payload.client_id, ...this.history() });
+      const own = this.sql.exec("SELECT message_id, emoji FROM reactions WHERE client_id = ?", payload.client_id).toArray();
+      this.send(socket, { type: "welcome", name, avatar, client_id: payload.client_id, session_id:joined.session_id,
+        own_reactions:own, watch:joined.room_id === "main" ? null : this.watchSnapshot(), party_next_at:this.ctx.storage.kv.get("party_next_at") || 0, server_time:Date.now(), ...this.history() });
       this.presence();
+      return;
+    }
+    if (payload.type === "party_share") {
+      if (!member.room_id || member.room_id === "main") return this.send(socket,{type:"party_error",message:"Create a private room to share an invitation."});
+      if (typeof payload.note !== "string" || payload.note.length > 160) return this.send(socket,{type:"party_error",message:"Keep your invitation under 160 characters."});
+      if (!this.takeRate(`share:${member.visitor}:${Math.floor(Date.now()/60000)}`,10,60000)) return this.send(socket,{type:"party_error",message:"Too many attempts. Try again in a minute."});
+      try {
+        const response = await this.env.ROOM.getByName("main").fetch(new Request("https://room/internal/party-share",{
+          method:"POST",body:JSON.stringify({room_id:member.room_id,client_id:member.client_id,name:member.name,avatar:member.avatar,
+            visitor:member.visitor,note:payload.note,video:this.watchSnapshot()?.video || null}),
+        }));
+        const result = await response.json();
+        if (result.next_at) this.ctx.storage.kv.put("party_next_at",result.next_at);
+        if (response.ok) this.broadcast({type:"party_shared",...result});
+        else this.send(socket,{type:"party_error",message:result.message || result.detail || "Couldn't share the invitation.",...result});
+      } catch { this.send(socket,{type:"party_error",message:"Couldn't confirm the invitation. Reconnect before trying again."}); }
+      return;
+    }
+    if (payload.type === "reaction" || payload.type === "watch") {
+      if (!this.takeRate(`action:${member.visitor}:${Math.floor(Date.now()/60000)}`, 120, 60000)) return;
+      if (payload.type === "watch") {
+        if (!member.room_id || member.room_id === "main") return this.send(socket,{type:"watch_error",message:"Watch together is available in private rooms. Create a room first."});
+        try {
+          const current = this.watchSnapshot();
+          const changed = changeWatch(current, payload, member, !!current?.host_online);
+          if (changed) this.ctx.storage.kv.put("watch", changed);
+          else this.ctx.storage.kv.delete("watch");
+          this.broadcast({type:"watch", watch:this.watchSnapshot(), server_time:Date.now()});
+        } catch (failure) { this.send(socket, {type:"watch_error", message:failure.message}); }
+      } else if (Number.isSafeInteger(payload.message_id) && REACTIONS.has(payload.emoji)) {
+        const mid = payload.message_id, emoji = payload.emoji;
+        if (!this.sql.exec("SELECT id FROM messages WHERE id = ?", mid).toArray().length) return;
+        const exists = this.sql.exec("SELECT 1 FROM reactions WHERE message_id = ? AND client_id = ? AND emoji = ?", mid, member.client_id, emoji).toArray().length > 0;
+        if (exists) this.sql.exec("DELETE FROM reactions WHERE message_id = ? AND client_id = ? AND emoji = ?", mid, member.client_id, emoji);
+        else this.sql.exec("INSERT INTO reactions (message_id, client_id, emoji) VALUES (?, ?, ?)", mid, member.client_id, emoji);
+        const count = this.sql.exec("SELECT COUNT(*) AS count FROM reactions WHERE message_id = ? AND emoji = ?", mid, emoji).toArray()[0].count;
+        this.broadcast({type:"reaction", message_id:mid, emoji, count, client_id:member.client_id, active:!exists});
+      }
       return;
     }
     if (payload.type !== "message" || typeof payload.body !== "string") {
@@ -384,6 +487,12 @@ export class ChatRoom extends DurableObject {
     }
     const body = payload.body.trim();
     const imageUrl = payload.image_url ?? null;
+    const replyToId = payload.reply_to_id ?? null;
+    if (replyToId !== null && (!Number.isSafeInteger(replyToId) || replyToId < 1 ||
+        !this.sql.exec("SELECT id FROM messages WHERE id = ?", replyToId).toArray().length)) {
+      this.send(socket, {type:"error", message:"That message is not in this room."});
+      return;
+    }
     const imageMatch = typeof imageUrl === "string" ? imageUrl.match(IMAGE_PATH) : null;
     if (Array.from(body).length > 2000 || (imageUrl !== null && !imageMatch) || (!body && !imageUrl)) {
       this.send(socket, { type: "error", message: "Send text, an uploaded image, or both." });
@@ -401,15 +510,15 @@ export class ChatRoom extends DurableObject {
     const createdAt = new Date().toISOString();
     try {
       this.sql.exec(
-        "INSERT INTO messages (client_id, name, avatar, body, image_url, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-        member.client_id, member.name, member.avatar, body, imageUrl, createdAt,
+        "INSERT INTO messages (client_id, name, avatar, body, image_url, created_at, reply_to_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        member.client_id, member.name, member.avatar, body, imageUrl, createdAt, replyToId,
       );
       if (imageMatch) this.sql.exec("UPDATE images SET referenced = 1 WHERE filename = ?", imageMatch[1]);
       const id = this.sql.exec("SELECT last_insert_rowid() AS id").toArray()[0].id;
-      this.broadcast({ type: "message", message: {
+      this.broadcast({ type: "message", message: this.decorate([{
         id, client_id: member.client_id, name: member.name, avatar: member.avatar,
-        body, image_url: imageUrl, created_at: createdAt,
-      } });
+        body, image_url: imageUrl, created_at: createdAt, reply_to_id:replyToId,
+      }])[0] });
     } catch {
       this.send(socket, { type: "error", message: "Your message could not be saved. Please try again." });
     }
@@ -418,12 +527,12 @@ export class ChatRoom extends DurableObject {
   webSocketClose(socket, code, reason) {
     const joined = socket.deserializeAttachment()?.joined;
     try { socket.close(code, reason); } catch { /* Already closed. */ }
-    if (joined) this.presence(socket);
+    if (joined) { this.presence(socket); this.watchPresence(socket); }
   }
 
   webSocketError(socket) {
     const joined = socket.deserializeAttachment()?.joined;
     try { socket.close(1011, "Connection error."); } catch { /* Already closed. */ }
-    if (joined) this.presence(socket);
+    if (joined) { this.presence(socket); this.watchPresence(socket); }
   }
 }

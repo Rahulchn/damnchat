@@ -13,8 +13,11 @@ globalThis.returnUI = {
   },
   matches(message, query, filter) {
     const body = typeof message.body === "string" ? message.body : "";
+    const media = globalThis.linkMedia?.first(body);
     if (filter === "links" && !/https?:\/\//i.test(body)) return false;
-    if (filter === "photos" && !message.image_url) return false;
+    if (filter === "photos" && !message.image_url && media?.type !== "image") return false;
+    if (filter === "music" && !["audio","music"].includes(media?.type)) return false;
+    if (filter === "videos" && media?.type !== "video") return false;
     if (filter === "invites" && !message.party) return false;
     return `${message.name || ""} ${body}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
   },
@@ -129,7 +132,10 @@ globalThis.returnUI = {
       const button = document.createElement("button"); button.type = "button"; button.className = "search-result";
       const meta = document.createElement("span"); meta.textContent = `${message.name} · ${new Date(message.created_at).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}`;
       const body = document.createElement("strong"); body.textContent = message.body || (message.image_url ? "Shared a photo" : "Message");
-      const type = document.createElement("small"); type.textContent = message.party ? "ROOM INVITATION ↗" : message.image_url ? "PHOTO ↗" : "JUMP TO MESSAGE ↗";
+      const media = globalThis.linkMedia?.first(message.body || "");
+      const type = document.createElement("small"); type.textContent = message.party ? "ROOM INVITATION ↗" :
+        message.image_url || media?.type === "image" ? "PHOTO ↗" :
+        ["audio","music"].includes(media?.type) ? "MUSIC & AUDIO ↗" : media?.type === "video" ? "VIDEO ↗" : "JUMP TO MESSAGE ↗";
       button.append(meta,body,type); button.addEventListener("click", () => { el("search-dialog").close(); this.jump(message.id); }); list.append(button);
     }
     el("search-empty").classList.toggle("hidden",!!matches.length);

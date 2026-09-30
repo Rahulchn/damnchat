@@ -363,6 +363,10 @@ html[data-theme="light"] .composer .attachment-button:hover:not(:disabled){backg
 .video-bubble{width:min(520px,65vw);max-width:min(520px,65vw);padding:5px;overflow:hidden}
 .video-bubble>.message-caption{padding:8px 10px 10px}
 .video-card{overflow:hidden;border:1px solid #403750;border-radius:11px;background:#080a12}
+.media-card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid #a98cca26;background:linear-gradient(110deg,#b397df13,transparent);color:#ab97c2;font-size:9px;font-weight:750;letter-spacing:1px}
+.media-card-heading>span:last-child{letter-spacing:0;color:#d5c8e5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.audio-card .media-card-heading{color:#b9eecb}.audio-card .media-card-heading>span:last-child{color:#c1d8ca}
+html[data-theme=light] .media-card-heading{color:#705383;border-color:#cdbfe0;background:#e8e0f433}html[data-theme=light] .media-card-heading>span:last-child{color:#473359}html[data-theme=light] .audio-card .media-card-heading{color:#376348}
 .video-card.is-vertical{width:min(350px,100%);margin-inline:auto}
 .video-card.is-vertical .video-player-wrap{aspect-ratio:9/16;max-height:68vh}
 .video-player-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#030409;overflow:hidden}

@@ -174,6 +174,12 @@ function mediaNode(details) {
   if (audio || music) card.classList.add("audio-card");
   if (image) card.classList.add("shared-image-card");
   if (details.vertical) card.classList.add("is-vertical");
+  const heading = document.createElement("div"); heading.className = "media-card-heading";
+  const mediaLabel = document.createElement("span");
+  mediaLabel.textContent = music ? "♫ MUSIC" : audio ? "♫ AUDIO" : image ? "▧ IMAGE" :
+    details.type === "file" ? "▤ FILE" : details.type === "post" ? "↗ POST" : "▶ VIDEO";
+  const provider = document.createElement("span"); provider.textContent = details.provider;
+  heading.append(mediaLabel,provider); card.append(heading);
   const frame = document.createElement("div"); frame.className = "video-player-wrap";
   let player;
   if (details.kind === "embed") {
@@ -334,6 +340,22 @@ function messageNode(message) {
   }
   react.addEventListener("click", () => { picker.classList.toggle("hidden"); react.setAttribute("aria-expanded", String(!picker.classList.contains("hidden"))); });
   actions.append(reply, react, picker);
+  if (message.body) {
+    const copy = document.createElement("button"); copy.type = "button"; copy.textContent = "⧉ Copy";
+    copy.setAttribute("aria-label", "Copy message from " + message.name);
+    copy.addEventListener("click", async () => {
+      copy.disabled = true;
+      try {
+        await navigator.clipboard.writeText(message.body);
+        copy.textContent = "✓ Copied";
+        copy.setAttribute("aria-label", "Message copied");
+      } catch { roomError("Copy isn't available in this browser. Select the message text to copy it instead."); }
+      finally {
+        setTimeout(() => { copy.disabled = false; copy.textContent = "⧉ Copy"; copy.setAttribute("aria-label", "Copy message from " + message.name); }, 1600);
+      }
+    });
+    actions.append(copy);
+  }
   const reactions = document.createElement("div"); reactions.className = "message-reactions";
   content.append(reactions, actions); renderReactions(reactions, message);
   item.append(avatarNode(message.avatar,message.name),content); return item;

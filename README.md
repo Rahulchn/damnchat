@@ -15,6 +15,9 @@ The Watch button in private rooms starts synchronized YouTube or direct HTTPS MP
 Private rooms can explicitly post an invitation to the public lounge using **Invite the lounge**. The confirmation warns that this publishes the room link and makes its history accessible to everyone in the lounge. The server permits one invitation per room every four minutes, including across members, reconnects and restarts. Cloud hosting additionally rate-limits invitations across rooms per connection. Cards expire after 30 minutes (the room link itself is not revoked). YouTube invitations show a thumbnail; direct videos use a play graphic without fetching video files for public viewers. Video previews are snapshots at sharing time, not claims that a party is still running.
 
 Messages can include an optional PNG, JPEG, WebP, or GIF image up to 5 MB. The
+attachment button and pasting an image into the message box both show a local
+preview first. You can add a caption or remove the image before sending; nothing
+is uploaded until you press Send. Plain-text and URL pasting remain unchanged. The
 server validates and re-encodes images before saving them, which removes embedded
 metadata such as EXIF/GPS data. Uploaded files receive random names and are stored
 locally in the ignored `uploads/` directory.

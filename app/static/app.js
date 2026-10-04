@@ -567,14 +567,17 @@ el("remove-image").addEventListener("click",clearSelectedImage);
 el("image-input").addEventListener("change",event => {
   const file=event.target.files?.[0];
   if (!file) return;
-  const allowed=["image/png","image/jpeg","image/webp","image/gif"];
-  if (!allowed.includes(file.type)) {
-    roomError("Choose a PNG, JPEG, WebP, or GIF image."); el("image-input").value=""; return;
-  }
-  if (file.size>5*1024*1024) {
-    roomError("Images must be 5 MB or smaller."); el("image-input").value=""; return;
+  const error = composerTools.imageError(file);
+  if (error) {
+    roomError(error); el("image-input").value=""; return;
   }
   showSelectedImage(file);
+});
+el("message-input").addEventListener("paste", event => {
+  composerTools.handlePaste(event, {
+    blocked: !state.ready || !!state.pending || state.uploading,
+    error: roomError, select: showSelectedImage,
+  });
 });
 el("message-form").addEventListener("submit",async event => {
   event.preventDefault();

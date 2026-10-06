@@ -631,6 +631,9 @@ el("message-form").addEventListener("submit",async event => {
   },10000);
 });
 el("message-input").addEventListener("keydown",event => {
+  if (event.key==="Escape" && !event.isComposing && state.reply && !state.pending) {
+    event.preventDefault(); cancelReply(); return;
+  }
   if (event.key==="Enter" && !event.shiftKey && !event.isComposing) {
     event.preventDefault(); el("message-form").requestSubmit();
   }

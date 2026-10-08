@@ -373,7 +373,9 @@ function renderReactions(target, message) {
   }
 }
 function cancelReply() { state.reply = null; el("reply-preview").classList.add("hidden"); }
-el("reply-cancel").addEventListener("click", cancelReply);
+el("reply-cancel").addEventListener("click", () => {
+  cancelReply(); el("message-input").focus({preventScroll:true});
+});
 function renderMessages() {
   const messages = [...state.messages.values()].sort((a,b) => a.id-b.id);
   const nodes=[]; let previousDay="";
@@ -558,12 +560,14 @@ function showSelectedImage(file) {
   const previewUrl=URL.createObjectURL(file);
   state.image={file,previewUrl,uploadedUrl:null};
   el("image-preview-thumb").src=previewUrl;
-  el("image-preview-name").textContent=file.name;
+  el("image-preview-name").textContent=composerTools.imageLabel(file);
   el("image-preview").classList.remove("hidden");
   roomError(""); updateSendState();
 }
 el("image-button").addEventListener("click",() => el("image-input").click());
-el("remove-image").addEventListener("click",clearSelectedImage);
+el("remove-image").addEventListener("click", () => {
+  clearSelectedImage(); el("message-input").focus({preventScroll:true});
+});
 el("image-input").addEventListener("change",event => {
   const file=event.target.files?.[0];
   if (!file) return;

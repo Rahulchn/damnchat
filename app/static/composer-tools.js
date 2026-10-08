@@ -1,5 +1,11 @@
 /* Clipboard images use the same explicit preview-and-send flow as attachments. */
 globalThis.composerTools = {
+  imageLabel(file) {
+    const size = file.size >= 1024 * 1024 ?
+      (file.size / (1024 * 1024)).toFixed(1).replace(/\.0$/, "") + " MB" :
+      Math.max(1, Math.ceil(file.size / 1024)) + " KB";
+    return (file.name?.trim() || "Pasted image") + " · " + size;
+  },
   imageError(file) {
     if (!file || !["image/png","image/jpeg","image/webp","image/gif"].includes(file.type)) {
       return "Choose a PNG, JPEG, WebP, or GIF image.";

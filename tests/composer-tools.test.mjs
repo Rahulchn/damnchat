@@ -3,6 +3,16 @@ import assert from 'node:assert/strict';
 import '../app/static/composer-tools.js';
 
 const tools = globalThis.composerTools;
+test('image previews show readable file sizes without displaying unnecessary decimals', () => {
+  assert.equal(tools.imageLabel({name:'photo.png',size:128}), 'photo.png · 1 KB');
+  assert.equal(tools.imageLabel({name:'photo.png',size:2048}), 'photo.png · 2 KB');
+  assert.equal(tools.imageLabel({name:'photo.png',size:1.5*1024*1024}), 'photo.png · 1.5 MB');
+  assert.equal(tools.imageLabel({name:'photo.png',size:5*1024*1024}), 'photo.png · 5 MB');
+});
+test('unnamed clipboard images have a clear preview label', () => {
+  assert.equal(tools.imageLabel({size:1024}), 'Pasted image · 1 KB');
+  assert.equal(tools.imageLabel({name:'   ',size:1024}), 'Pasted image · 1 KB');
+});
 function paste(file, blocked=false) {
   let prevented=false, selected=null, error='';
   const event = {clipboardData:{items:file ? [{kind:'file',type:file.type,getAsFile:() => file}] : [{kind:'string',type:'text/plain'}]},preventDefault:() => {prevented=true;}};

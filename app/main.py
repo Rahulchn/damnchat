@@ -217,11 +217,34 @@ def create_app(database_url: str | None = None, upload_dir: Path | None = None) 
     async def security_headers(request: Request, call_next):
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
+        path = request.url.path
+        if path.startswith("/api/") or path in {"/ws", "/healthz", "/docs", "/redoc", "/openapi.json"} or (
+            path == "/" and "room" in request.query_params
+        ) or (path.startswith("/static/") and path.endswith(".html")):
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
+        elif path in {"/", "/about", "/privacy"}:
+            response.headers["X-Robots-Tag"] = "index, follow"
         return response
 
-    @application.get("/", include_in_schema=False)
+    @application.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
     async def index():
         return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})
+
+    @application.api_route("/about", methods=["GET", "HEAD"], include_in_schema=False)
+    async def about():
+        return FileResponse(STATIC_DIR / "about.html", headers={"Cache-Control": "no-cache"})
+
+    @application.api_route("/privacy", methods=["GET", "HEAD"], include_in_schema=False)
+    async def privacy():
+        return FileResponse(STATIC_DIR / "privacy.html", headers={"Cache-Control": "no-cache"})
+
+    @application.api_route("/robots.txt", methods=["GET", "HEAD"], include_in_schema=False)
+    async def robots():
+        return FileResponse(STATIC_DIR / "robots.txt", media_type="text/plain")
+
+    @application.api_route("/sitemap.xml", methods=["GET", "HEAD"], include_in_schema=False)
+    async def sitemap():
+        return FileResponse(STATIC_DIR / "sitemap.xml", media_type="application/xml")
 
     @application.get("/api/messages")
     async def history(

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#0a0d16">
+  <title>Privacy at a Glance — Damn Chat</title>
+  <meta name="description" content="What Damn Chat stores, who can read chat history, how browser storage and media previews work, and the current privacy limitations.">
+  <link rel="canonical" href="https://damnchat.me/privacy"><link rel="icon" href="/static/chat-logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/company.css?v=1">
+</head>
+<body class="company-page">
+  <header class="company-header"><a class="company-wordmark" href="/"><img src="/static/chat-logo.svg" alt="">Damn Chat.</a><nav aria-label="Main"><a href="/about">About</a><a href="/privacy" aria-current="page">Privacy</a><a href="/">Open chat ↗</a></nav></header>
+  <main class="company-content">
+    <span class="company-kicker">CLEAR INFORMATION. INFORMED CHOICES.</span>
+    <h1>Privacy, in plain language.</h1>
+    <p class="lead">Here's how the current product works. A room link is not an account or a password, and Damn Chat is not a place to store confidential information.</p>
+    <p class="company-updated">Last updated: October 9, 2026</p>
+    <section class="company-section"><h2>Who can see your messages?</h2><p>Anyone can join the public lounge and read its history. Anyone with a room's link can read that room's messages and images. Sending a room invitation to the public lounge shares that link with everyone there. Invite cards expire, but the room link itself does not.</p><p>Display names are not verified. Messages are not end-to-end encrypted; the hosting systems and operator can access stored content.</p></section>
+    <section class="company-section"><h2>What is stored on the server?</h2><p>Messages, display names, avatar choices, timestamps, replies, reactions, room invitations, per-tab client identifiers, and uploaded images are stored to provide chat history and room features. Current hosted watch-party state and rate-limit records are also retained.</p><p>The hosted version uses Cloudflare. Cloudflare receives network information, including IP addresses, and the content sent to the app. The app uses a salted IP-derived identifier for rate limiting. You do not need to supply an email address or create an account.</p></section>
+    <section class="company-section"><h2>Images and external media</h2><p>Picked or pasted images are previewed locally and uploaded only when you press Send. The server validates and re-encodes them to remove embedded metadata such as EXIF location information. This does not remove personal information visible in the image itself.</p><p>Pasted URLs are classified in the browser, not fetched by the chat server. Activating a media card contacts its provider, which may receive your IP address and browser information and apply its own cookies and policies. Watch parties load media for participants; public YouTube invitation cards also load a thumbnail from YouTube.</p></section>
+    <section class="company-section"><h2>What stays in your browser?</h2><p>Your theme and up to 12 saved-room bookmarks are kept in local storage. Your display name, avatar, and per-tab client ID are kept in session storage. Other people using the same browser profile may see saved room links.</p><p>Removing a bookmark or clearing browser storage does not delete messages or images already stored on the server. Browser storage may be unavailable in restricted browsing modes.</p></section>
+    <section class="company-section"><h2>Retention and current limitations</h2><p>There is currently no automatic expiry of chat history, self-service message deletion, verified age check, or in-app reporting and moderation system. Stored messages and images can remain until the operator removes them. Avoid posting passwords, financial information, personal documents, or content you don't have permission to share.</p><p>Search crawlers are invited to visit the public website pages, not chat history or uploads. Crawler instructions are not access controls: they cannot stop a visitor or a bot from using publicly reachable endpoints.</p></section>
+    <section class="company-section"><h2>Questions or concerns?</h2><p>Our <a href="/about#support">support information</a> explains the available public GitHub support channel. Please don't post sensitive information or room invitation links there.</p></section>
+  </main>
+  <footer class="company-footer"><div><strong>Damn Chat</strong><span>Conversations worth staying for.</span><small>Founded January 2026 · © 2026 Damn Chat</small></div><nav aria-label="Company"><a href="/">Chat</a><a href="/about">About</a><a href="/about#support">Help & support</a></nav></footer>
+</body>
+</html>

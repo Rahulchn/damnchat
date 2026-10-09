@@ -20,6 +20,7 @@ function json(value, status = 200) {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
+      "X-Robots-Tag": "noindex, nofollow",
     },
   });
 }
@@ -165,14 +166,20 @@ export default {
     if (path.startsWith("/api/") || path === "/ws") return error("Not found.", 404);
 
     if (request.method !== "GET" && request.method !== "HEAD") return error("Not found.", 404);
-    const assetPath = path === "/" ? "/" : path.startsWith("/static/") ? path.slice(7) : null;
+    const publicPages = new Map([["/", "/"], ["/about", "/about"], ["/privacy", "/privacy"],
+      ["/robots.txt", "/robots.txt"], ["/sitemap.xml", "/sitemap.xml"]]);
+    const assetPath = publicPages.get(path) || (path.startsWith("/static/") ? path.slice(7) : null);
     if (!assetPath) return error("Not found.", 404);
     const assetUrl = new URL(assetPath + url.search, url.origin);
     const response = await env.ASSETS.fetch(new Request(assetUrl, request));
-    if (path !== "/") return response;
     const headers = new Headers(response.headers);
-    headers.set("Cache-Control", "no-cache");
     headers.set("X-Content-Type-Options", "nosniff");
+    if (["/", "/about", "/privacy"].includes(path)) {
+      headers.set("Cache-Control", "no-cache");
+      headers.set("X-Robots-Tag", path === "/" && url.searchParams.has("room") ? "noindex, nofollow" : "index, follow");
+    } else if (path.startsWith("/static/") && path.endsWith(".html")) headers.set("X-Robots-Tag", "noindex, nofollow");
+    if (path === "/robots.txt") headers.set("Content-Type", "text/plain; charset=utf-8");
+    if (path === "/sitemap.xml") headers.set("Content-Type", "application/xml; charset=utf-8");
     return new Response(response.body, { status: response.status, headers });
   },
 };
@@ -382,6 +389,7 @@ export class ChatRoom extends DurableObject {
       return new Response(new Blob(chunks), {
         headers: {
           "Content-Type": "image/webp",
+          "X-Robots-Tag": "noindex, nofollow",
           "X-Content-Type-Options": "nosniff",
           "Cache-Control": "public, max-age=31536000, immutable",
         },

@@ -43,6 +43,25 @@ async function join(name, room = 'main') {
 const homepage = await fetch(base + "/");
 assert.equal(homepage.status, 200);
 assert.match(await homepage.text(), /damnchat/);
+assert.equal(homepage.headers.get('x-robots-tag'), 'index, follow');
+for (const path of ['/about','/privacy']) {
+  const page = await fetch(base + path, {headers:{'User-Agent':'Googlebot'}});
+  assert.equal(page.status,200);
+  assert.match(await page.text(), /Damn Chat/);
+  assert.equal(page.headers.get('x-robots-tag'),'index, follow');
+  assert.equal((await fetch(base + path,{method:'HEAD'})).status,200);
+}
+const robots = await fetch(base + '/robots.txt');
+assert.equal(robots.status,200);
+assert.match(robots.headers.get('content-type'),/text\/plain/);
+assert.match(await robots.text(), /User-agent: \*\s+Allow: \/\s+Disallow: \/api\//);
+const sitemap = await fetch(base + '/sitemap.xml');
+assert.equal(sitemap.status,200);
+assert.match(sitemap.headers.get('content-type'),/application\/xml/);
+assert.deepEqual([...((await sitemap.text()).matchAll(/<loc>(.*?)<\/loc>/g))].map(match => match[1]),
+  ['https://damnchat.me/','https://damnchat.me/about','https://damnchat.me/privacy']);
+assert.equal((await fetch(base + '/?room=' + 'a'.repeat(32))).headers.get('x-robots-tag'),'noindex, nofollow');
+assert.equal((await fetch(base + '/static/index.html',{redirect:'manual'})).headers.get('x-robots-tag'),'noindex, nofollow');
 assert.equal((await fetch(base + "/static/app.js")).status, 200);
 assert.equal((await fetch(base + "/static/styles.css")).status, 200);
 assert.equal((await fetch(base + "/static/avatars/doge.png")).status, 200);
@@ -58,7 +77,9 @@ try {
   const [aCopy, bCopy] = await Promise.all([aMessage, bMessage]);
   assert.deepEqual(aCopy, bCopy);
 
-  const history = await (await fetch(base + "/api/messages?limit=100")).json();
+  const historyResponse = await fetch(base + "/api/messages?limit=100");
+  assert.equal(historyResponse.headers.get('x-robots-tag'), 'noindex, nofollow');
+  const history = await historyResponse.json();
   assert(history.messages.some(message => message.body === body));
   assert.equal((await fetch(base + "/api/messages?limit=201")).status, 422);
 
@@ -78,6 +99,7 @@ try {
   const image = await fetch(base + imageUrl);
   assert.equal(image.status, 200);
   assert.equal(image.headers.get("content-type"), "image/webp");
+  assert.equal(image.headers.get('x-robots-tag'), 'noindex, nofollow');
   assert.equal(Buffer.from(await image.arrayBuffer()).subarray(0, 4).toString(), "RIFF");
 
   const sharedImage = nextPacket(bob, packet => packet.type === "message" && packet.message.image_url === imageUrl);

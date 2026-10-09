@@ -1,0 +1,11 @@
+# Public website pages are open to all crawlers. Chat APIs are not a directory.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /ws
+Disallow: /healthz
+Disallow: /docs
+Disallow: /redoc
+Disallow: /openapi.json
+
+Sitemap: https://damnchat.me/sitemap.xml

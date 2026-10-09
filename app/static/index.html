@@ -5,14 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#080b14">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>damnchat — stay a little, say a lot</title>
+  <title>Damn Chat — Conversations & Watch Together</title>
   <meta name="description" content="Hang out in the lounge, invite friends to your own room, and watch together without leaving the chat. No account needed.">
+  <link rel="canonical" href="https://damnchat.me/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Damn Chat">
+  <meta property="og:title" content="Damn Chat — A better place to be together">
+  <meta property="og:description" content="Real-time conversations, rooms for your friends, and watch parties. Founded in January 2026.">
+  <meta property="og:url" content="https://damnchat.me/">
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Damn Chat","url":"https://damnchat.me/","logo":"https://damnchat.me/static/chat-logo.svg","sameAs":["https://github.com/Rahulchn/damnchat"]}</script>
   <link rel="icon" href="/static/chat-logo.svg?v=1" type="image/svg+xml">
   <script>try{document.documentElement.dataset.theme=localStorage.getItem("chatter_theme")==="light"?"light":"dark"}catch{document.documentElement.dataset.theme="dark"}</script>
   <link rel="stylesheet" href="/static/styles.css?v=20">
   <link rel="stylesheet" href="/static/hangout.css?v=2">
   <link rel="stylesheet" href="/static/return-ui.css?v=1">
   <link rel="stylesheet" href="/static/watch-layout.css?v=1">
+  <link rel="stylesheet" href="/static/company.css?v=1">
 </head>
 <body>
   <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -29,20 +38,21 @@
   <main class="shell">
     <section id="join-view" class="join-layout">
       <header class="landing-nav">
-        <a class="brand" href="/" aria-label="Damnchat home"><span class="brand-mark"><img src="/static/chat-logo.svg?v=1" alt=""></span>damnchat<span class="brand-dot">.</span></a>
+        <a class="brand" href="/" aria-label="Damn Chat home"><span class="brand-mark"><img src="/static/chat-logo.svg?v=1" alt=""></span>Damn Chat<span class="brand-dot">.</span></a>
+        <a class="company-nav-link" href="/about">About us</a>
         <button id="saved-open" class="saved-open" type="button">☆ Your rooms</button>
         <button class="theme-toggle" type="button" aria-label="Switch to light mode"><span class="theme-glyph" aria-hidden="true">☀</span><span class="theme-label">Light mode</span></button>
       </header>
       <div class="welcome-panel">
-        <div class="welcome-copy"><span class="eyebrow"><span class="tiny-dot"></span> YOUR CORNER OF THE INTERNET</span>
-          <h1>Stay a little.<br><span>Say a lot.</span><i aria-hidden="true">✳</i></h1>
-          <p>Find a conversation. Bring your friends.<br>Put something on and lose track of time.</p>
+        <div class="welcome-copy"><span class="eyebrow"><span class="tiny-dot"></span> DAMN CHAT · EST. JANUARY 2026</span>
+          <h1>A better place.<br><span>To be together.</span></h1>
+          <p>Real-time conversations. Rooms for your friends.<br>Shared moments, without leaving the chat.</p>
         </div>
         <div class="lounge-art" aria-hidden="true">
           <div class="lounge-orbit orbit-a"></div><div class="lounge-orbit orbit-b"></div>
           <div class="lounge-core"><svg viewBox="0 0 100 100"><path d="M27 22h46a13 13 0 0 1 13 13v26a13 13 0 0 1-13 13H47L27 87V74a13 13 0 0 1-13-13V35a13 13 0 0 1 13-13Z" fill="currentColor"/><circle cx="34" cy="48" r="5"/><circle cx="50" cy="48" r="5"/><circle cx="66" cy="48" r="5"/></svg></div>
           <div class="lounge-note note-one"><span>▶</span><div>one more video?<small>watch it together.</small></div></div>
-          <div class="lounge-note note-two">same room. different chaos.<span>✦</span></div>
+          <div class="lounge-note note-two">Good company. One conversation.<span>✦</span></div>
           <span class="lounge-spark spark-one">✧</span><span class="lounge-spark spark-two">+</span>
         </div>
         <div class="feature-ribbon"><span>01 <strong>Meet people</strong></span><span>02 <strong>Watch together</strong></span><span>03 <strong>Your own room</strong></span></div>
@@ -64,12 +74,17 @@
         </form>
         <p id="join-error" class="error" role="alert"></p>
         <div class="join-footnote"><svg class="icon"><use href="#icon-smile"/></svg>Come as you are. Stay as long as you like.</div>
+        <p class="join-privacy-note">Names aren't verified. Public messages are visible to everyone; anyone with a room link can read its history. <a href="/privacy">Privacy at a glance ↗</a></p>
       </div>
+      <footer class="company-footer">
+        <div><strong>Damn Chat</strong><span>Conversations worth staying for.</span><small>Founded January 2026 · © 2026 Damn Chat</small></div>
+        <nav aria-label="Company"><a href="/about">About</a><a href="/privacy">Privacy</a><a href="/about#support">Help & support</a><a href="https://github.com/Rahulchn/damnchat" target="_blank" rel="noopener noreferrer">Source code ↗</a></nav>
+      </footer>
     </section>
 
     <section id="room-view" class="room hidden" aria-label="Group chat">
       <aside class="sidebar">
-        <div class="brand"><span class="brand-mark"><img src="/static/chat-logo.svg?v=1" alt=""></span>damnchat<span class="brand-dot">.</span></div>
+        <div class="brand"><span class="brand-mark"><img src="/static/chat-logo.svg?v=1" alt=""></span>Damn Chat<span class="brand-dot">.</span></div>
         <div class="sidebar-section"><span class="eyebrow">THE HANGOUT</span><div class="room-nav" aria-current="page"><span class="hash">#</span><div><strong id="sidebar-room">The public lounge</strong><span id="sidebar-room-detail">Everyone's here</span></div><span class="tiny-dot"></span></div></div>
         <div class="room-note"><span class="note-spark">✳</span><h3>No awkward<br>intros needed.</h3><p>Drop a thought, a joke,<br>or a very important “hey”.</p><span class="note-line"></span></div>
         <div class="sidebar-bottom"><span class="sidebar-caption">GOOD VIBES HAVE ENTERED THE CHAT</span><div class="self-profile"><span id="sidebar-avatar" class="avatar"></span><div><strong id="sidebar-name"></strong><span>That's you</span></div><span class="tiny-dot"></span></div></div>

@@ -2,6 +2,18 @@
 
 [Live app](https://damnchat.me) · [GitHub repository](https://github.com/Rahulchn/damnchat)
 
+The public site presents the Damn Chat brand and its owner-supplied founding date,
+January 2026. `/about` explains the product and links to public GitHub support;
+`/privacy` describes actual data handling and current limitations. No ratings,
+certifications, customer counts, or incorporation status are claimed.
+
+`/robots.txt` permits public website crawling; `/sitemap.xml` lists only the home,
+About, and Privacy pages. Chat history, uploaded images, and room-link pages have
+`X-Robots-Tag: noindex, nofollow` headers. These are crawler instructions, not
+authentication or a guarantee of search removal. Private-room access remains
+link-based. Cloudflare account-level bot protection may still independently
+challenge visitors; this change does not disable security settings.
+
 Enter a nickname and join the public lounge, or create an invite room for friends. No account is required. Messages support replies and emoji reactions, with saved history per room.
 
 Invite rooms use an unguessable link, not accounts: anyone holding the link can read its history and images. They are not end-to-end encrypted. Keep invite links private.

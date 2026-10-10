@@ -118,6 +118,7 @@ globalThis.returnUI = {
     if (!this.config.state().joined) return;
     this.config.el("search-feedback").textContent = "";
     this.renderSearch(); this.config.el("search-dialog").showModal(); this.config.el("search-query").focus();
+    this.config.el("search-query").select();
   },
   renderSearch() {
     if (!this.config) return;

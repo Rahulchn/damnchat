@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import WebSocket from "ws";
 
 const base = process.env.CHAT_CLOUD_TEST_URL || "http://127.0.0.1:8787";
@@ -64,7 +63,8 @@ assert.equal((await fetch(base + '/?room=' + 'a'.repeat(32))).headers.get('x-rob
 assert.equal((await fetch(base + '/static/index.html',{redirect:'manual'})).headers.get('x-robots-tag'),'noindex, nofollow');
 assert.equal((await fetch(base + "/static/app.js")).status, 200);
 assert.equal((await fetch(base + "/static/styles.css")).status, 200);
-assert.equal((await fetch(base + "/static/avatars/doge.png")).status, 200);
+assert.equal((await fetch(base + "/static/avatars/orbit.svg")).status, 200);
+assert.equal((await fetch(base + "/static/avatars/doge.png")).status, 404);
 assert.equal((await fetch(base + "/api/video-preview?url=https://example.com")).status, 404);
 
 const alice = await join("Cloud Alice");
@@ -89,7 +89,8 @@ try {
   });
   assert.equal(unsafe.status, 415);
 
-  const png = await readFile(new URL("../app/static/avatars/doge.png", import.meta.url));
+  // Original generated 2x2 pixel fixture, not a third-party image asset.
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGMsi7zGwMDAxAAGABOGAang9pCJAAAAAElFTkSuQmCC", "base64");
   const uploaded = await fetch(base + "/api/uploads", {
     method: "POST", headers: { "Content-Type": "image/png", Origin: base }, body: png,
   });

@@ -64,7 +64,7 @@
           <div id="room-picker" class="room-picker" role="group" aria-label="Choose a room"><button id="public-room" type="button" aria-pressed="true">The public lounge<small>Meet whoever's here</small></button><button id="private-room" type="button" aria-pressed="false">Your own room<small>Invite your people</small></button></div>
           <p id="invite-notice" class="invite-notice hidden">You're invited. This room is for people with the link.</p>
           <div class="profile-preview"><span id="preview-avatar" class="avatar avatar-xl"></span><div><span class="preview-label">YOUR CHAT PERSONA</span><strong id="preview-name">The mystery guest</strong></div><svg class="icon"><use href="#icon-spark"/></svg></div>
-          <fieldset class="avatar-fieldset"><legend>Choose your avatar <span id="avatar-name">Gigachad</span></legend><div id="avatar-picker" class="avatar-picker"></div></fieldset>
+          <fieldset class="avatar-fieldset"><legend>Choose your avatar <span id="avatar-name">Orbit</span></legend><div id="avatar-picker" class="avatar-picker"></div></fieldset>
           <div class="name-label"><label for="display-name" class="field-label">What should we call you?</label><button id="shuffle-name" type="button">↻ Surprise me</button></div>
           <input id="display-name" placeholder="Your name" maxlength="40" required autocomplete="nickname">
           <button id="join-button" class="primary-button" type="submit">
@@ -114,7 +114,7 @@
         <div id="message-scroll" class="message-scroll">
           <div id="dvd-saver" class="dvd-saver" aria-hidden="true"><strong>DVD</strong><span>DAMNCHAT</span></div>
           <div class="history-controls"><button id="load-older" class="quiet-button hidden" type="button">Load earlier messages</button></div>
-          <div id="empty-state"><div class="empty-avatars"><img src="/static/avatars/facepalm.png" alt=""><img src="/static/avatars/gigachad.webp" alt=""><img src="/static/avatars/handsome-squidward.png" alt=""></div><span class="eyebrow">THE MIC IS YOURS</span><h2>Be the plot twist.<br>Say hello first.</h2><p>Everyone in the room will see your message.</p></div>
+          <div id="empty-state"><div class="empty-avatars"><img src="/static/avatars/sage.svg" alt=""><img src="/static/avatars/orbit.svg" alt=""><img src="/static/avatars/sunny.svg" alt=""></div><span class="eyebrow">THE MIC IS YOURS</span><h2>Be the plot twist.<br>Say hello first.</h2><p>Everyone in the room will see your message.</p></div>
           <div id="messages" role="log" aria-label="Group messages" aria-live="polite" aria-relevant="additions"></div>
         </div>
         <button id="new-messages" class="new-messages hidden" type="button"><span id="new-message-label">Back to latest ↓</span></button>
@@ -145,6 +145,7 @@
   <script src="/static/return-ui.js?v=3" defer></script>
   <script src="/static/watch-layout.js?v=2" defer></script>
   <script src="/static/composer-tools.js?v=2" defer></script>
-  <script src="/static/app.js?v=29" defer></script>
+  <script src="/static/avatar-catalog.js?v=1" defer></script>
+  <script src="/static/app.js?v=30" defer></script>
 </body>
 </html>

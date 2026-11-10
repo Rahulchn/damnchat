@@ -30,17 +30,11 @@ if (!/^[0-9a-f-]{36}$/i.test(clientId || "")) clientId = makeId();
 storage.set("group_client_id", clientId);
 try { localStorage.removeItem("chat_token"); } catch {}
 el("display-name").value = storage.get("group_name") || "";
-const AVATARS = ["gigachad", "jonah-hill", "roll-safe", "patrick", "handsome-squidward", "sad-frog", "facepalm", "doge"];
-const AVATAR_FILES = {
-  gigachad: "gigachad.webp", "jonah-hill": "jonah-hill.jpg", "roll-safe": "roll-safe.jpg",
-  patrick: "patrick.png", "handsome-squidward": "handsome-squidward.png",
-  "sad-frog": "sad-frog.png", facepalm: "facepalm.png", doge: "doge.png",
-  orbit: "orbit.svg", bloom: "bloom.svg", pixel: "pixel.svg", comet: "comet.svg",
-  sunny: "sunny.svg", wave: "wave.svg", sage: "sage.svg", luna: "luna.svg"
-};
+const AVATARS = avatarCatalog.choices;
+const AVATAR_FILES = avatarCatalog.files;
 const avatarLabel = id => id.split("-").map(part => part[0].toUpperCase() + part.slice(1)).join(" ");
 const savedAvatar = storage.get("group_avatar");
-let chosenAvatar = AVATARS.includes(savedAvatar) ? savedAvatar : "gigachad";
+let chosenAvatar = avatarCatalog.preferred(savedAvatar);
 function avatarNode(id, name = "") {
   const wrapper = document.createElement("span"); wrapper.className = "avatar";
   const img = document.createElement("img");

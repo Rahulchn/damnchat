@@ -33,3 +33,5 @@ cert.pem
 .cloudflared/
 uploads/
 real-time-chat/
+.local-avatar-backup/
+.local-reports/

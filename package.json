@@ -1,8 +1,10 @@
 {
   "name": "damnchat",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test tests/*.test.mjs cloudflare/*.test.mjs",
     "dev:cloud": "wrangler dev",
     "deploy:cloud": "wrangler deploy",
     "check:cloud": "node --check cloudflare/worker.js",

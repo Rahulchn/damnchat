@@ -2,6 +2,15 @@
 
 [Live app](https://damnchat.me) · [GitHub repository](https://github.com/Rahulchn/damnchat)
 
+Original project code and illustrations are available under [MIT](LICENSE).
+Dependencies and external content retain their own rights; read the
+[asset and license inventory](THIRD_PARTY_NOTICES.md), including the warning
+about retired artwork in older Git history.
+
+For contributors: [development and tests](CONTRIBUTING.md),
+[security reporting](SECURITY.md), [usage evidence methodology](docs/USAGE_EVIDENCE.md),
+and [maintainer evidence / application draft](docs/MAINTAINER_EVIDENCE.md).
+
 The public site presents the Damn Chat brand and its owner-supplied founding date,
 January 2026. `/about` explains the product and links to public GitHub support;
 `/privacy` describes actual data handling and current limitations. No ratings,
@@ -34,7 +43,7 @@ server validates and re-encodes images before saving them, which removes embedde
 metadata such as EXIF/GPS data. Uploaded files receive random names and are stored
 locally in the ignored `uploads/` directory.
 
-Choose from eight locally stored photo and meme avatars before joining. Your avatar appears in the room and is saved with each message. The earlier illustrated avatars remain available for displaying old messages, without deleting history. The interface adapts from a desktop sidebar to a full-screen phone layout.
+Choose from eight project-owned illustrated SVG avatars before joining. Your avatar appears in the room and is saved with each message. Legacy photo/meme avatar IDs now resolve to illustrations, without rewriting message history. Unverified raster artwork is no longer shipped in the current tree; older Git history still contains it. The interface adapts from a desktop sidebar to a full-screen phone layout.
 
 Built with Python FastAPI, native WebSockets, async SQLAlchemy, SQLite, and plain HTML/CSS/JavaScript.
 
@@ -169,7 +178,7 @@ provider blocks playback.
 - Shared images are also available to everyone who can reach the room. They remain on the host machine until manually removed from `uploads/`; deleting an uploaded file leaves its old message without a working image.
 - For PostgreSQL later, install `asyncpg` and set `DATABASE_URL` to your PostgreSQL connection string. Keep credentials in a local `.env` file and never commit it. This changes the database connection; existing SQLite data is not automatically transferred.
 - Run one server worker. Room broadcast and online counts live in that process. Multiple workers would require a shared event layer.
-- The new avatar images came from third-party URLs supplied for this project. Check their reuse rights before publicly distributing or hosting the app.
+- Avatar provenance and the scope of the project license are recorded in `THIRD_PARTY_NOTICES.md`. Do not restore unverified third-party artwork.
 
 ## Tests
 

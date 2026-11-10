@@ -13,7 +13,7 @@ class JoinRoom(BaseModel):
         "orbit", "bloom", "pixel", "comet", "sunny", "wave", "sage", "luna",
         "gigachad", "jonah-hill", "roll-safe", "patrick", "handsome-squidward",
         "sad-frog", "facepalm", "doge",
-    ] = "gigachad"
+    ] = "orbit"
 
     @field_validator("name", mode="before")
     @classmethod

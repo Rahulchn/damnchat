@@ -436,7 +436,7 @@ export class ChatRoom extends DurableObject {
     const member = socket.deserializeAttachment();
     if (!member?.joined) {
       const name = typeof payload.name === "string" ? payload.name.trim().replace(/\s+/gu, " ") : "";
-      const avatar = payload.avatar ?? "gigachad";
+      const avatar = payload.avatar ?? "orbit";
       if (payload.type !== "join" || !name || Array.from(name).length > 40 || /\p{C}/u.test(name) ||
           typeof payload.client_id !== "string" || !UUID.test(payload.client_id) || !AVATARS.has(avatar)) {
         this.send(socket, { type: "error", message: "Enter a name between 1 and 40 characters to join." });
